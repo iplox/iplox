@@ -1,0 +1,14 @@
+<?php
+
+namespace Iplox\Api {
+	class ContentTYpe {
+    const CONTENT = 0;
+    const ARTICLE = 1;
+    const LIST_ = 2;
+    const IMAGE = 3;
+    const AUDIO = 4;
+    const VIDEO = 5;
+    const MENU = 6;
+	}
+}
+?>
