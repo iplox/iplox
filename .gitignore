@@ -1,0 +1,9 @@
+# Comentarios
+
+*.*~
+.*~
+*~
+doc/**/*
+test/**/*
+vendor/
+composer.lock

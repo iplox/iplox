@@ -1,0 +1,23 @@
+{
+   "name":"iployola/iplox-framework",
+	"authors": [
+            {
+                "name": "Jr. Stanley Zapata",
+                "email": "jrszapata@hotmail.com"
+            }
+	],
+   "config": {
+      "vendor-dir": "vendor/" 
+   },
+   "require": {},
+   "autoload": {
+   	  "psr-0": {
+   	  	"Iplox\\": "src/"
+ 	  	}
+   },
+   "suggest": {
+     "phpunit/phpunit": "Allows test your code using unit testings.",
+     "phpdocumentor/phpdocumentor2": "Allows documentation generation using in-code special comments.",
+     "phing/phing": "The PHP build automation tool"
+   }
+}
