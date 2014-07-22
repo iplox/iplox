@@ -9,6 +9,9 @@ namespace Iplox\Mvc {
         public static $errorHandler = 'errorHandler';
         public static $defaultController = 'App';
         public static $defaultMethod = 'index';
+        public static $defaultMethodPosfix = 'Action';
+        public static $classPosfix = 'Controller';
+        
         protected static $singleton;
         
         protected static $assumeRequestMethod = 'GET';
@@ -42,25 +45,95 @@ namespace Iplox\Mvc {
                             return true;
                         } 
                     }
-                    
                     return false;
-                    
+                },
+                ':num'=> function($val){
+                    if(is_numeric($val)){
+                        return true;
+                    }
+                    else {
+                        return false;
+                    }
                 }
             ));
             
+            //Determine if any of this routes actually exists as an object
             $r->addRoutes([
-                '/:controller/:var' => array(static::$singleton, 'capture'),
-                '/:controller' => array(static::$singleton, 'capture'),
+                '/:namespace/:controller/:method/*params'=>  array(static::$singleton, 'captureNSControllerMethod'),
+                '/:controller/:method/*params'=>  array(static::$singleton, 'captureControllerMethod'),
+                '/:method/*param' => array(static::$singleton, 'captureMethod'),
+                '/*param' => array(static::$singleton, 'captureAll'),
                 '/' => array(static::$singleton, 'capture')
             ]);
             
             if($autoRun){
-                if(!isset($req)) $req = $_SERVER['REQUEST_URI'];
+                if(!isset($req)) {
+                    $req = $_SERVER['REQUEST_URI'];
+                }
                 $r->check($req);
             }
         }
         
+        public function captureNSControllerMethod($ns, $controller, $method, $params=array()){
+            $controllerName =
+                static::$controllerNamespace . '\\' .
+                (isset($ns) ? ucwords($ns) . '\\' : '') .
+                ucwords($controller) . static::$classPosfix;
+                
+            if(class_exists($controllerName)){
+                $inst = new $controllerName();
+                if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))){    
+                    call_user_func_array(array($inst, $method . ucwords(static::$singleton->router->requestMethod)), $params);
+                }
+                else if(method_exists($inst, $method . ucwords(static::$defaultMethodPosfix))){
+                    call_user_func_array(array($inst, $method . ucwords(static::$defaultMethodPosfix)), preg_split('/\/{1}/', $params));  
+                }
+                else {
+                    return false;
+                }
+                return true;    
+                
+            }
+            return false;
+        }
+        
+        public function captureNSController($ns, $controller){
+            return $this->captureNSControllerMethod(
+                $ns,
+                $controller,
+                static::$defaultMethod
+            );
+        }
+        
+        public function captureControllerMethod($controller, $method, $params=''){
+            return $this->captureNSControllerMethod(
+                null,
+                $controller,
+                $method,
+                $params
+            );
+        }
+        
+        public function captureMethod($method, $params=''){
+            return $this->captureNSControllerMethod(
+                null,
+                static::$defaultController,
+                $method,
+                $params
+            );
+        }
+        
+        public function captureAll($params=''){
+            return $this->captureNSControllerMethod(
+                null,
+                static::$defaultController,
+                static::$defaultMethod,
+                $params
+            );
+        }
+        
         public function capture($controllerName = null, $methodName = null, $path = null) {
+            return false;
             if (isset(static::$pluralResourceToControler) && isset($controllerName)){
                 $controllerName = static::$controllerNamespace . '\\' . ucwords(preg_replace('/s$/', '', $controllerName)) . "Controller";
             }
