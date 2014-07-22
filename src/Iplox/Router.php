@@ -23,61 +23,7 @@ namespace Iplox {
             $this->goHandlers = array();
             
         }
-        
-        //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
-        public function addRoutes($routes=array(), $method="ALL"){
-            if(array_key_exists($method, $this->routes)){
-                $this->routes[$method] = array_merge($this->routes[$method], $routes);
-               
-                uksort($this->routes[$method], function($a, $b){
-                   return (strlen($a) < strlen($b)) ? true : false;
-                }); 
-            }
-        }
-        
-        public function prependRoutes($routes=array(), $method="ALL"){
-            if(array_key_exists($method, $this->routes)){
-                
-                $tmpArray = array();
-                foreach($routes as $k=> $v){
-                    if(array_key_exists($k, $this->routes[$method])) {
-                        $this->routes[$method] = $v;
-                    }
-                    else {
-                        $tmpArray[$k] = $v; 
-                    }
-                    $this->routes[$method] = array_merge($tmpArray, $this->routes[$method]);
-                }
-            }
-        }
-        
-        public function getRoutes(){
-            return $this->routes;
-        }
-        
-        public function addFilter($filterName, $filterHandler){
-            $this->filters["$filterName"] = $filterHandler;
-        }
-        
-        public function addFilters($filters=array()){
-            foreach($filters as $filter => $handler){
-                $this->addFilter($filter, $handler);
-            }
-        }
-        
-        public function isFilter($filter){
-            return array_key_exists($filter, $this->filters);
-        }
-        
-        public function checkFilter($filter, $passedVal){
-            foreach($this->filters as $k=> $v){
-                if($k === $filter){
-                    return call_user_func($v, $passedVal);
-                }
-            }
-            return false;
-        }
-        
+                        
         public function check($req = null, $method=null){
             if(!isset($req)) $req = $_SERVER['REQUEST_URI'];
             if(!isset($method)) $method = $_SERVER['REQUEST_METHOD'];
@@ -104,67 +50,89 @@ namespace Iplox {
                 }
                 else {
                     //Esta es la ruta?
-                    $matches = $this->checkRoute($routeSections, $pathSections);
+                    $matches = $this->checkRoute($routeSections, $pathSections, $req);
                     if(is_array($matches)){
                         //Si lo es. Se hace lo que se vaya a hacer.
                         //Se asignan los valores de la ruta, verbo y de la solicitud.
                         $this->request = $req;
                         $this->route = $endpoint;
                         $this->requestMethod = $method;
-
+                        
                         //Se resetean las rutas. Para que se puedan agregar nuevas si así  se desea.
                         $this->routes[$method] = array();
-
+    
                         if(is_callable($callback)){
-                           //Se llama a la función de callback y se pasan los parámetros de la url solicitada
-                           return call_user_func_array($callback, $matches);
-                        }
-                        else { 
-                           return false;
+                            //Se llama a la función de callback y se pasan los parámetros de la url solicitada
+                            if(call_user_func_array($callback, $matches)){
+                                 return true; 
+                            }
                         }
                     }
-                    else {
-                        continue; //No lo es. Continua con los otros endpoints.
-                    }
+                    continue; //No lo es. Continua con los otros endpoints.
                 }
                     
             }
         }
         
-        protected function checkRoute($routeSections, $pathSections){
-            $pathValues = array();
-            foreach($routeSections as $k => $rsec){
-                //Se verifica si empieza con : o *.
-                if(preg_match('/^[:\*][a-zA-Z\-_]*$/', $rsec)>0){
-                    //Si no es un filtro registrado se toman los parámetros.
-                    //Si el filtro está registrado, se evalúa.
-                    if(! $this->isFilter($rsec) || $this->checkFilter($rsec, $pathSections[$k])){
-                        //:type filter
-                        if(preg_match('/^:/', $rsec)>0){
-                            array_push($pathValues, $pathSections[$k]);
-                        }
-                        //*type filter
-                        else { 
-                            array_push($pathValues, $pathSections[$k]);
-                        }
-                        continue;
+        
+        /**** Routes ****/
+        
+        //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
+        public function addRoutes($routes=array(), $method="ALL"){
+            if(array_key_exists($method, $this->routes)){
+                $this->routes[$method] = array_merge($this->routes[$method], $routes);
+               
+                uksort($this->routes[$method], function($a, $b){
+                   return (strlen($a) < strlen($b)) ? true : false;
+                }); 
+            }
+        }
+        
+        //Agrega rutas al inicio del arreglo de rutas.
+        public function prependRoutes($routes=array(), $method="ALL"){
+            if(array_key_exists($method, $this->routes)){
+                
+                $tmpArray = array();
+                foreach($routes as $k=> $v){
+                    if(array_key_exists($k, $this->routes[$method])) {
+                        $this->routes[$method] = $v;
                     }
                     else {
-                        return false;
+                        $tmpArray[$k] = $v; 
                     }
-                }
-//                else if(preg_match('/^[a-zA-Z\-_]*$/', $rsec)>0){
-//                    continue;
-//                }
-                //Ya que no es un filtro se hace una verificacion normal.
-                if($rsec=== $pathSections[$k]){
-                    continue;
-                }
-                else {
-                    return false;
+                    $this->routes[$method] = array_merge($tmpArray, $this->routes[$method]);
                 }
             }
-            return $pathValues;
+        }
+        
+        public function getRoutes(){
+            return $this->routes;
+        }
+        
+        public function checkRoute($routeSections, $pathSections, $req){
+            $regexRoute; $matches=array();
+            $regexRoute = ''; 
+            foreach($routeSections as $rs){
+                if(preg_match('/^\*\w*/', $rs) === 1){
+                    $regexRoute .= '(.*)';
+                }
+                else if(preg_match('/^:\w*/', $rs) === 1){
+                    $regexRoute .= '([\w]*)';
+                }
+                $regexRoute = $regexRoute.'\/';
+            }
+            $req =  preg_replace('/^\//', '', preg_replace('/\/$/', '', $req));
+            $regexRoute = '/^'.substr($regexRoute, 0, count($regexRoute)-3).'/';
+            
+            $countMatches = preg_match($regexRoute, $req, $matches);
+            if(count($matches) > 0){
+                array_shift($matches);
+                if(isset($matches[0]) && $matches[0] == ''){
+                    array_shift($matches);
+                }
+                return $matches;
+            }
+            return false;
         }
         
         
@@ -175,7 +143,38 @@ namespace Iplox {
             $r = ($r === "") ? "/" : $r;
             $this->run($r, $this->requestMethod);
         }
+        
+        
+        
+        /**** Filters ****/
+        
+        public function addFilter($filterName, $filterHandler){
+            $this->filters["$filterName"] = $filterHandler;
+        }
+        
+        public function addFilters($filters=array()){
+            foreach($filters as $filter => $handler){
+                $this->addFilter($filter, $handler);
+            }
+        }
+        
+        public function isFilter($filter){
+            return array_key_exists($filter, $this->filters);
+        }
+        
+        public function checkFilter($filter, $passedVal){
+            echo "$passedVal"."<br/>";
+            foreach($this->filters as $k=> $v){
+                if($k === $filter){
+                    return call_user_func($v, $passedVal);
+                }
+            }
+            return false;
+        }
                 
+                
+        /**** Properties ****/
+        
         public function __get($name){
             if($name === 'route'){
                 return $this->route;
