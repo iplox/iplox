@@ -1,6 +1,6 @@
 <?php
 
-namespace Iplox {
+    namespace Iplox;
 
     class Router {
         public $routes;
@@ -10,8 +10,10 @@ namespace Iplox {
         protected $requestMethod;
         protected $filters;
         
-        function __construct(){
-            $this->routes = array(
+        function __construct()
+        {
+            $this->routes = array
+            (
                 'GET'=> array(),
                 'POST'=> array(),
                 'PUT'=> array(),
@@ -24,31 +26,46 @@ namespace Iplox {
             
         }
                         
-        public function check($req = null, $method=null){
-            if(!isset($req)) $req = $_SERVER['REQUEST_URI'];
-            if(!isset($method)) $method = $_SERVER['REQUEST_METHOD'];
+        public function check($req = null, $method=null)
+        {
+            //
+            if(!isset($req))
+            {
+                $req = $_SERVER['REQUEST_URI'];
+            }
+            //
+            if(!isset($method))
+            {
+                $method = $_SERVER['REQUEST_METHOD'];
+            }
+            //
             $req = preg_replace('/\/$/', '', $req);
             
-            if($method !== 'ALL') {
+            //
+            if($method !== 'ALL')
+            {
                 $routeList = array_merge($this->routes[$method], $this->routes['ALL']);
             }
             else {
                 $routeList = $this->routes[$method];
             }
             
-            foreach($routeList as $endpoint => $callback){
+            //
+            foreach($routeList as $endpoint => $callback)
+            {
                 $routeSections = preg_split('/\/{1}/', $endpoint);
                 array_shift($routeSections);
                 if(count($routeSections)==1 && empty($routeSections[0])) $routeSections= [];
-//                if(count($routeSections)===0) $routeSections = [''];
                 
                 $pathSections = preg_split('/\/{1}/', $req);
                 array_shift($pathSections);
                                     
-                if(count($routeSections) > count($pathSections)) { 
+                if(count($routeSections) > count($pathSections))
+                { 
                     continue;
                 }
-                else {
+                else
+                {
                     //Esta es la ruta?
                     $matches = $this->checkRoute($routeSections, $pathSections, $req);
                     if(is_array($matches)){
@@ -61,9 +78,11 @@ namespace Iplox {
                         //Se resetean las rutas. Para que se puedan agregar nuevas si así  se desea.
                         $this->routes[$method] = array();
     
-                        if(is_callable($callback)){
+                        if(is_callable($callback))
+                        {
                             //Se llama a la función de callback y se pasan los parámetros de la url solicitada
-                            if(call_user_func_array($callback, $matches)){
+                            if(call_user_func_array($callback, $matches))
+                            {
                                  return true; 
                             }
                         }
@@ -76,10 +95,11 @@ namespace Iplox {
         
         
         /**** Routes ****/
-        
         //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
-        public function addRoutes($routes=array(), $method="ALL"){
-            if(array_key_exists($method, $this->routes)){
+        public function addRoutes($routes=array(), $method="ALL")
+        {
+            if(array_key_exists($method, $this->routes))
+            {
                 $this->routes[$method] = array_merge($this->routes[$method], $routes);
                
                 uksort($this->routes[$method], function($a, $b){
@@ -89,12 +109,15 @@ namespace Iplox {
         }
         
         //Agrega rutas al inicio del arreglo de rutas.
-        public function prependRoutes($routes=array(), $method="ALL"){
-            if(array_key_exists($method, $this->routes)){
-                
+        public function prependRoutes($routes=array(), $method="ALL")
+        {
+            if(array_key_exists($method, $this->routes))
+            {     
                 $tmpArray = array();
-                foreach($routes as $k=> $v){
-                    if(array_key_exists($k, $this->routes[$method])) {
+                foreach($routes as $k=> $v)
+                {
+                    if(array_key_exists($k, $this->routes[$method]))
+                    {
                         $this->routes[$method] = $v;
                     }
                     else {
@@ -105,18 +128,23 @@ namespace Iplox {
             }
         }
         
-        public function getRoutes(){
+        public function getRoutes()
+        {
             return $this->routes;
         }
         
-        public function checkRoute($routeSections, $pathSections, $req){
+        public function checkRoute($routeSections, $pathSections, $req)
+        {
             $regexRoute; $matches=array();
             $regexRoute = ''; 
-            foreach($routeSections as $rs){
-                if(preg_match('/^\*\w*/', $rs) === 1){
+            foreach($routeSections as $rs)
+            {
+                if(preg_match('/^\*\w*/', $rs) === 1)
+                {
                     $regexRoute .= '(.*)';
                 }
-                else if(preg_match('/^:\w*/', $rs) === 1){
+                else if(preg_match('/^:\w*/', $rs) === 1)
+                {
                     $regexRoute .= '([\w]*)';
                 }
                 $regexRoute = $regexRoute.'\/';
@@ -125,9 +153,11 @@ namespace Iplox {
             $regexRoute = '/^'.substr($regexRoute, 0, count($regexRoute)-3).'/';
             
             $countMatches = preg_match($regexRoute, $req, $matches);
-            if(count($matches) > 0){
+            if(count($matches) > 0)
+            {
                 array_shift($matches);
-                if(isset($matches[0]) && $matches[0] == ''){
+                if(isset($matches[0]) && $matches[0] == '')
+                {
                     array_shift($matches);
                 }
                 return $matches;
@@ -137,7 +167,8 @@ namespace Iplox {
         
         
         //Este método permite agregar nuevas rutas después de la selección de una ruta que la contenga.
-        public function next(){
+        public function next()
+        {
             $rg = "/^\/".preg_replace('/^\//', '', $this->route)."/";
             $r = preg_replace($rg, "", $this->request);
             $r = ($r === "") ? "/" : $r;
@@ -148,24 +179,31 @@ namespace Iplox {
         
         /**** Filters ****/
         
-        public function addFilter($filterName, $filterHandler){
+        public function addFilter($filterName, $filterHandler)
+        {
             $this->filters["$filterName"] = $filterHandler;
         }
         
-        public function addFilters($filters=array()){
-            foreach($filters as $filter => $handler){
+        public function addFilters($filters=array())
+        {
+            foreach($filters as $filter => $handler)
+            {
                 $this->addFilter($filter, $handler);
             }
         }
         
-        public function isFilter($filter){
+        public function isFilter($filter)
+        {
             return array_key_exists($filter, $this->filters);
         }
         
-        public function checkFilter($filter, $passedVal){
+        public function checkFilter($filter, $passedVal)
+        {
             echo "$passedVal"."<br/>";
-            foreach($this->filters as $k=> $v){
-                if($k === $filter){
+            foreach($this->filters as $k=> $v)
+            {
+                if($k === $filter)
+                {
                     return call_user_func($v, $passedVal);
                 }
             }
@@ -175,21 +213,27 @@ namespace Iplox {
                 
         /**** Properties ****/
         
-        public function __get($name){
-            if($name === 'route'){
+        public function __get($name)
+        {
+            if($name === 'route')
+            {
                 return $this->route;
             }
-            else if($name === 'request'){
+            else if($name === 'request')
+            {
                 return $this->request;
             }
-            else if($name === 'requestMethod'){
+            else if($name === 'requestMethod')
+            {
                 return $this->requestMethod;
             }
         }
         
         //Devuelve tru si el metodo solicitado es GET
-        public function isGet(){
-            if($_SERVER['REQUEST_METHOD'] === 'GET'){
+        public function isGet()
+        {
+            if($_SERVER['REQUEST_METHOD'] === 'GET')
+            {
                 return true;
             }
             else {
@@ -198,8 +242,10 @@ namespace Iplox {
         }
         
         //Devuelve tru si el metodo solicitado es POST
-        public function isPost(){
-            if($_SERVER['REQUEST_METHOD'] === 'POST'){
+        public function isPost()
+        {
+            if($_SERVER['REQUEST_METHOD'] === 'POST')
+            {
                 return true;
             }
             else {
@@ -208,8 +254,10 @@ namespace Iplox {
         }
         
         //Devuelve tru si el metodo solicitado es PUT
-        public function isPut(){
-            if($_SERVER['REQUEST_METHOD'] === 'PUT'){
+        public function isPut()
+        {
+            if($_SERVER['REQUEST_METHOD'] === 'PUT')
+            {
                 return true;
             }
             else {
@@ -218,15 +266,16 @@ namespace Iplox {
         }
         
         //Devuelve tru si el metodo solicitado es DELETE
-        public function isDelete(){
-            if($_SERVER['REQUEST_METHOD'] === 'DELETE'){
+        public function isDelete()
+        {
+            if($_SERVER['REQUEST_METHOD'] === 'DELETE')
+            {
                 return true;
             }
-            else {
+            else
+            {
                 return false;
             }
         }
         	
     }
-}
-?>
