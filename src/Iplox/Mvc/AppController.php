@@ -2,6 +2,8 @@
 
     namespace Iplox\Mvc;
     use Iplox\Mvc\Controller;
+    use Iplox\Config as Cfg;
+    use Iplox\Bundle;
     
     class AppController extends Controller
     {
@@ -27,7 +29,7 @@
             return static::$singleton;
         }
         
-        public static function init($req = null, $autoRun = true)
+        public static function init($req = '/', $autoRun = true, $appDir = null)
         {
             $inst = static::getSingleton();
             $r = $inst->router;
@@ -63,12 +65,53 @@
             //Determine if any of this routes actually exists as an object
             $r->addRoutes([
                 '/:namespace/:controller/:method/*params'=>  array(static::$singleton, 'captureNSControllerMethod'),
+                '/:namespace/:controller/*params'=>  array(static::$singleton, 'captureNSController'),
                 '/:controller/:method/*params'=>  array(static::$singleton, 'captureControllerMethod'),
-                '/:method/*param' => array(static::$singleton, 'captureMethod'),
-                '/*param' => array(static::$singleton, 'captureAll'),
-                '/' => array(static::$singleton, 'capture')
+                '/:controller/*param' => array(static::$singleton, 'captureController'),
+                '/*param' => array(static::$singleton, 'captureAll')
             ]);
             
+            
+            /**** Configurations ****/
+            //Reflection Class
+            $rc = new \ReflectionClass(\get_called_class());
+                
+            //Config of the Enviroment
+            if(!isset($_IPLOXENV)) {
+                Cfg::setEnv('DEVELOPMENT');                
+            }
+            else {
+                Cfg::setEnv($_IPLOXENV);   
+            }
+                      
+            //Config of the Application Dir.
+            if(isset($appDir)){
+                if(is_readable($appDir)){
+                    Cfg::setAppDir($appDir);
+                }
+                else {
+                    throw Exception('El directorio espesificado como appDir no existe o esta restringido el acceso.');
+                }
+            }
+            else {
+                Cfg::setAppDir(dirname($rc->getFileName())); 
+            }
+            
+            //Config of the Application Namespace
+            Cfg::setAppNamespace($rc->getNamespaceName()); 
+            
+            //Setup of all bundles.
+            $gral = Cfg::get('Bundles');
+            $rc = new \ReflectionClass($gral);
+            $bundles = $rc->getConstants();
+            foreach($bundles as $name => $value){
+                $bdl = Bundle::get(ucwords($name));
+                if(method_exists($bdl, 'setup')){
+                    call_user_func(array($bdl, 'setup'));
+                }
+                
+            }
+            //Time to run
             if($autoRun){
                 if(!isset($req)) {
                     $req = $_SERVER['REQUEST_URI'];
@@ -77,13 +120,13 @@
             }
         }
         
-        public function captureNSControllerMethod($ns, $controller, $method, $params=array())
+        public function captureNSControllerMethod($ns, $controller, $method, $params='')
         {
             $controllerName =
                 static::$controllerNamespace . '\\' .
                 (isset($ns) ? ucwords($ns) . '\\' : '') .
                 ucwords($controller) . static::$classPosfix;
-                
+            
             if(class_exists($controllerName)){
                 $inst = new $controllerName();
                 if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))){    
@@ -110,7 +153,8 @@
             );
         }
         
-        public function captureControllerMethod($controller, $method, $params=''){
+        public function captureControllerMethod($controller, $method, $params='')
+        {
             return $this->captureNSControllerMethod(
                 null,
                 $controller,
@@ -119,12 +163,12 @@
             );
         }
         
-        public function captureMethod($method, $params='')
+        public function captureController($controller, $params='')
         {
             return $this->captureNSControllerMethod(
                 null,
-                static::$defaultController,
-                $method,
+                $controller,
+                static::$defaultMethod,
                 $params
             );
         }
