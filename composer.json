@@ -1,9 +1,9 @@
 {
-   "name":"iployola/iploxphp",
+   "name":"stanlix/iploxphp",
 	"authors": [
             {
                 "name": "Jr. Stanley Zapata",
-                "email": "jrszapata@hotmail.com"
+                "email": "jzapata@stanlix.com"
             }
 	],
    "config": {
