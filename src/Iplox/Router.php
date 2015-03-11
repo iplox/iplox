@@ -84,31 +84,21 @@ class Router {
     
     /**** Routes ****/
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
-    public function addRoutes($routes=array(), $method="ALL")
-    {
+    public function appendRoutes($routes=array(), $method="ALL") {
         if(array_key_exists($method, $this->routes))
         {
             $this->routes[$method] = array_merge($this->routes[$method], $routes);
-           
-            uksort($this->routes[$method], function($a, $b){
-               return (strlen($a) < strlen($b)) ? true : false;
-            }); 
         }
     }
     
     //Agrega rutas al inicio del arreglo de rutas.
-    public function prependRoutes($routes=array(), $method="ALL")
-    {
-        if(array_key_exists($method, $this->routes))
-        {     
+    public function prependRoutes($routes=array(), $method="ALL") {
+        if(array_key_exists($method, $this->routes)) {
             $tmpArray = array();
-            foreach($routes as $k=> $v)
-            {
-                if(array_key_exists($k, $this->routes[$method]))
-                {
+            foreach($routes as $k=> $v) {
+                if(array_key_exists($k, $this->routes[$method])) {
                     $this->routes[$method] = $v;
-                }
-                else {
+                } else {
                     $tmpArray[$k] = $v; 
                 }
                 $this->routes[$method] = array_merge($tmpArray, $this->routes[$method]);
@@ -116,27 +106,21 @@ class Router {
         }
     }
     
-    public function getRoutes()
-    {
+    public function getRoutes() {
         return $this->routes;
     }
 
-    public function checkRoute($routeSections, $req)
-    {
+    public function checkRoute($routeSections, $req) {
         $matches=array();
         $regexRoute = '';
         $pathSeparator = '';
-        foreach($routeSections as $rs)
-        {
-            if(preg_match('/^\*\w*/', $rs) === 1)
-            {
+        foreach($routeSections as $rs) {
+            if(preg_match('/^\*\w*/', $rs) === 1) {
                 $regexRoute .= '('.$pathSeparator.'.*)?';
             }
-            else if(preg_match('/^:\w*/', $rs) === 1)
-            {
+            else if(preg_match('/^:\w*/', $rs) === 1) {
                 $regexRoute .= $pathSeparator.'([\w]*)';
-            }
-            else {
+            } else {
                 $regexRoute .= $pathSeparator.$rs;
             }
             $pathSeparator = '\/';
@@ -144,11 +128,9 @@ class Router {
         $req =  preg_replace('/^\//', '', preg_replace('/\/$/', '', $req));
         $regexRoute = '/^'.$regexRoute.'/';
         $countMatches = preg_match($regexRoute, $req, $matches);
-        if(count($matches) > 0)
-        {
+        if(count($matches) > 0) {
             array_shift($matches);
-            if(isset($matches[0]) && $matches[0] == '')
-            {
+            if(isset($matches[0]) && $matches[0] == '') {
                 array_shift($matches);
             }
             return $matches;
