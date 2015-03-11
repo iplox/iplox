@@ -39,8 +39,7 @@ class Router {
         }
 
         //
-        foreach($routeList as $endpoint => $callback)
-        {
+        foreach($routeList as $endpoint => $callback) {
             $routeSections = preg_split('/\/{1}/', $endpoint);
             array_shift($routeSections);
             if(count($routeSections)==1 && empty($routeSections[0])) {
@@ -55,7 +54,7 @@ class Router {
                 continue;
             } else {
                 //Esta es la ruta?
-                $matches = $this->checkRoute($routeSections, $pathSections, $req);
+                $matches = $this->checkRoute($routeSections, $req);
                 if(is_array($matches)) {
                     //Si, lo es. Ahora se le asignaran los valores de la ruta, verbo y de la solicitud.
                     $this->request = $req;
@@ -85,8 +84,7 @@ class Router {
     /**** Routes ****/
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
     public function appendRoutes($routes=array(), $method="ALL") {
-        if(array_key_exists($method, $this->routes))
-        {
+        if(array_key_exists($method, $this->routes)) {
             $this->routes[$method] = array_merge($this->routes[$method], $routes);
         }
     }
