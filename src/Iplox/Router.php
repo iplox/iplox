@@ -25,74 +25,60 @@ class Router {
         $this->goHandlers = array();
         
     }
-                    
+
     public function check($req = null, $method=null)
     {
+        $req = $req ? preg_replace('/\/$/', '', $req) : ['REQUEST_URI'];
+        $method = $method ? $method : $_SERVER['REQUEST_METHOD'];
+
         //
-        if(!isset($req))
-        {
-            $req = $_SERVER['REQUEST_URI'];
-        }
-        //
-        if(!isset($method))
-        {
-            $method = $_SERVER['REQUEST_METHOD'];
-        }
-        //
-        $req = preg_replace('/\/$/', '', $req);
-        
-        //
-        if($method !== 'ALL')
-        {
+        if($method !== 'ALL') {
             $routeList = array_merge($this->routes[$method], $this->routes['ALL']);
-        }
-        else {
+        } else {
             $routeList = $this->routes[$method];
         }
-        
+
         //
         foreach($routeList as $endpoint => $callback)
         {
             $routeSections = preg_split('/\/{1}/', $endpoint);
             array_shift($routeSections);
-            if(count($routeSections)==1 && empty($routeSections[0])) $routeSections= [];
-            
+            if(count($routeSections)==1 && empty($routeSections[0])) {
+                $routeSections= [];
+            }
+
             $pathSections = preg_split('/\/{1}/', $req);
             array_shift($pathSections);
-                              
+
             //El catchAll (*) filter type allow to match 0 path section as 1 or even more. For that reason the -1 operation.
-            if((count($routeSections) - 1) > count($pathSections))
-            {
+            if((count($routeSections) - 1) > count($pathSections)) {
                 continue;
-            }
-            else
-            {
-                
+            } else {
                 //Esta es la ruta?
                 $matches = $this->checkRoute($routeSections, $pathSections, $req);
-                if(is_array($matches)){
-                    //Si lo es. Se hace lo que se vaya a hacer.
-                    //Se asignan los valores de la ruta, verbo y de la solicitud.
+                if(is_array($matches)) {
+                    //Si, lo es. Ahora se le asignaran los valores de la ruta, verbo y de la solicitud.
                     $this->request = $req;
                     $this->route = $endpoint;
                     $this->requestMethod = $method;
-                    
-                    //Se resetean las rutas. Para que se puedan agregar nuevas si así  se desea.
+
+                    //Se resetean las rutas. Para que se puedan agregar nuevas si así se desea.
                     $this->routes[$method] = array();
 
-                    if(is_callable($callback))
-                    {
+                    if(is_callable($callback)) {
                         //Se llama a la función de callback y se pasan los parámetros de la url solicitada
-                        if(call_user_func_array($callback, $matches))
-                        {
-                             return true; 
-                        }
+                        call_user_func_array($callback, $matches);
+                        return true;
+                    } else {
+                        throw new \Exception("Not valid callable entity was provided as handler to the route $req.");
                     }
+                } else {
+                    //No, lo es. Continua con los otros endpoints.
+                    continue;
                 }
-                continue; //No lo es. Continua con los otros endpoints.
             }
-                
         }
+        return false;
     }
     
     
@@ -134,10 +120,10 @@ class Router {
     {
         return $this->routes;
     }
-    
-    public function checkRoute($routeSections, $pathSections, $req)
+
+    public function checkRoute($routeSections, $req)
     {
-        $regexRoute; $matches=array();
+        $matches=array();
         $regexRoute = '';
         $pathSeparator = '';
         foreach($routeSections as $rs)
@@ -149,6 +135,9 @@ class Router {
             else if(preg_match('/^:\w*/', $rs) === 1)
             {
                 $regexRoute .= $pathSeparator.'([\w]*)';
+            }
+            else {
+                $regexRoute .= $pathSeparator.$rs;
             }
             $pathSeparator = '\/';
         }
@@ -164,10 +153,8 @@ class Router {
             }
             return $matches;
         }
-        echo ' Nop<br/><br/>';
         return false;
     }
-    
     
     //Este método permite agregar nuevas rutas después de la selección de una ruta que la contenga.
     public function next()
