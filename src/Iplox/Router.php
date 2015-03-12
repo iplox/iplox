@@ -26,9 +26,8 @@ class Router {
         
     }
 
-    public function check($req = null, $method=null)
-    {
-        $req = $req ? preg_replace('/\/$/', '', $req) : ['REQUEST_URI'];
+    public function check($req = null, $method=null) {
+        $req = $req ? preg_replace('/\/$/', '', $req) : $_SERVER['REQUEST_URI'];
         $method = $method ? $method : $_SERVER['REQUEST_METHOD'];
 
         //
@@ -54,7 +53,7 @@ class Router {
                 continue;
             } else {
                 //Esta es la ruta?
-                $matches = $this->checkRoute($routeSections, $req);
+                $matches = $this->checkRoute($routeSections, $pathSections, $req);
                 if(is_array($matches)) {
                     //Si, lo es. Ahora se le asignaran los valores de la ruta, verbo y de la solicitud.
                     $this->request = $req;
@@ -79,8 +78,7 @@ class Router {
         }
         return false;
     }
-    
-    
+
     /**** Routes ****/
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
     public function appendRoutes($routes=array(), $method="ALL") {
@@ -108,11 +106,17 @@ class Router {
         return $this->routes;
     }
 
-    public function checkRoute($routeSections, $req) {
+    public function checkRoute($routeSections, $pathSections, $req) {
         $matches=array();
         $regexRoute = '';
         $pathSeparator = '';
-        foreach($routeSections as $rs) {
+        foreach($routeSections as $i => $rs) {
+            // Si $rs esta registrado como filtro, se verifica si el valor pasado es valido.
+            if(array_key_exists($rs, $this->filters) && array_key_exists($i, $pathSections) && !$this->checkFilter($rs, $pathSections[$i])){
+                return false;
+            }
+
+            // Cada $rs se transformará en un RegexExp que se integrará al regexRoute final que determinará si el route es el correcto.
             if(preg_match('/^\*\w*/', $rs) === 1) {
                 $regexRoute .= '('.$pathSeparator.'.*)?';
             }
@@ -125,8 +129,9 @@ class Router {
         }
         $req =  preg_replace('/^\//', '', preg_replace('/\/$/', '', $req));
         $regexRoute = '/^'.$regexRoute.'/';
-        $countMatches = preg_match($regexRoute, $req, $matches);
-        if(count($matches) > 0) {
+
+        // Se verifica si $req coincide con el $regexRoute construido a partir de la ruta ($routeSections)
+        if(preg_match($regexRoute, $req, $matches) > 0) {
             array_shift($matches);
             if(isset($matches[0]) && $matches[0] == '') {
                 array_shift($matches);
@@ -137,8 +142,7 @@ class Router {
     }
     
     //Este método permite agregar nuevas rutas después de la selección de una ruta que la contenga.
-    public function next()
-    {
+    public function next() {
         $rg = "/^\/".preg_replace('/^\//', '', $this->route)."/";
         $r = preg_replace($rg, "", $this->request);
         $r = ($r === "") ? "/" : $r;
@@ -149,31 +153,23 @@ class Router {
     
     /**** Filters ****/
     
-    public function addFilter($filterName, $filterHandler)
-    {
+    public function addFilter($filterName, $filterHandler) {
         $this->filters["$filterName"] = $filterHandler;
     }
     
-    public function addFilters($filters=array())
-    {
-        foreach($filters as $filter => $handler)
-        {
+    public function addFilters($filters=array()) {
+        foreach($filters as $filter => $handler) {
             $this->addFilter($filter, $handler);
         }
     }
     
-    public function isFilter($filter)
-    {
+    public function isFilter($filter) {
         return array_key_exists($filter, $this->filters);
     }
     
-    public function checkFilter($filter, $passedVal)
-    {
-        echo "$passedVal"."<br/>";
-        foreach($this->filters as $k=> $v)
-        {
-            if($k === $filter)
-            {
+    public function checkFilter($filter, $passedVal) {
+        foreach($this->filters as $k=> $v) {
+            if($k === $filter) {
                 return call_user_func($v, $passedVal);
             }
         }
@@ -183,67 +179,48 @@ class Router {
             
     /**** Properties ****/
     
-    public function __get($name)
-    {
-        if($name === 'route')
-        {
+    public function __get($name) {
+        if($name === 'route') {
             return $this->route;
-        }
-        else if($name === 'request')
-        {
+        } else if($name === 'request') {
             return $this->request;
-        }
-        else if($name === 'requestMethod')
-        {
+        } else if($name === 'requestMethod') {
             return $this->requestMethod;
         }
     }
     
-    //Devuelve tru si el metodo solicitado es GET
-    public function isGet()
-    {
-        if($_SERVER['REQUEST_METHOD'] === 'GET')
-        {
+    //Devuelve true si el metodo solicitado es GET
+    public function isGet() {
+        if($_SERVER['REQUEST_METHOD'] === 'GET') {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
     
-    //Devuelve tru si el metodo solicitado es POST
-    public function isPost()
-    {
-        if($_SERVER['REQUEST_METHOD'] === 'POST')
-        {
+    //Devuelve true si el metodo solicitado es POST
+    public function isPost() {
+        if($_SERVER['REQUEST_METHOD'] === 'POST') {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
     
     //Devuelve tru si el metodo solicitado es PUT
-    public function isPut()
-    {
-        if($_SERVER['REQUEST_METHOD'] === 'PUT')
-        {
+    public function isPut() {
+        if($_SERVER['REQUEST_METHOD'] === 'PUT') {
             return true;
-        }
-        else {
+        } else {
             return false;
         }
     }
     
     //Devuelve tru si el metodo solicitado es DELETE
-    public function isDelete()
-    {
-        if($_SERVER['REQUEST_METHOD'] === 'DELETE')
-        {
+    public function isDelete() {
+        if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
             return true;
-        }
-        else
-        {
+        } else {
             return false;
         }
     }       
