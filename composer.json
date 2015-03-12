@@ -9,14 +9,16 @@
    "config": {
       "vendor-dir": "vendor/" 
    },
+   "require-dev": {
+     "phpunit/phpunit": "4.5.*"
+   },
    "require": {},
    "autoload": {
    	  "psr-0": {
-   	  	"Iplox\\": "src/"
- 	  	}
+        "Iplox\\": "src/"
+      }
    },
    "suggest": {
-     "phpunit/phpunit": "Allows test your code using unit testings.",
      "phpdocumentor/phpdocumentor2": "Allows documentation generation using in-code special comments.",
      "phing/phing": "The PHP build automation tool"
    }
