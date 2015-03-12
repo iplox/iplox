@@ -1,5 +1,4 @@
 # Comentarios
-
 *.*~
 .*~
 *~
@@ -7,3 +6,7 @@ doc/**/*
 test/**/*
 vendor/
 composer.lock
+
+# InteliJ IDE file and folder
+iploxphp.iml
+.idea/
