@@ -8,18 +8,25 @@
     class AppController extends Controller
     {
         public static $controllerNamespace = 'App\Controllers';
-        public static $errorHandler = 'errorHandler';
-        public static $defaultController = 'App';
-        public static $defaultMethod = 'index';
-        public static $defaultMethodPosfix = 'Action';
+        public static $methodPosfix = 'Action';
         public static $classPosfix = 'Controller';
-        
+        public static $errorHandler = 'errorHandler';
+
+        // En los casos donde el $req='/', $defaultController y $defaultMethod se usarán para resolver el request.
+        public static $defaultController = null;
+        public static $defaultMethod = null;
+
+        // En caso de que se haga un request que no pueda ser resuelto $catchAllController $catchAllMethod se usaran para resolver el request.
+        public static $catchAllController = null;
+        public static $catchAllMethod = null;
+
+        // La unica instancia que tendrá esta clase.
         protected static $singleton;
         
-        protected static $assumeRequestMethod = 'GET';
+        protected static $requestMethod = 'GET';
         protected static $pluralResourceToControler = true;
         
-        //Retorna (e instancia si ya no lo está) el singleton del ApiController
+        //Retorna (e instancia si aún no lo está) el singleton
         public static function getSingleton()
         {
             if(! isset(static::$singleton))
@@ -63,7 +70,7 @@
             ));
             
             //Determine if any of this routes actually exists as an object
-            $r->addRoutes([
+            $r->appendRoutes([
                 '/:namespace/:controller/:method/*params'=>  array(static::$singleton, 'captureNSControllerMethod'),
                 '/:namespace/:controller/*params'=>  array(static::$singleton, 'captureNSController'),
                 '/:controller/:method/*params'=>  array(static::$singleton, 'captureControllerMethod'),
@@ -90,7 +97,7 @@
                     Cfg::setAppDir($appDir);
                 }
                 else {
-                    throw Exception('El directorio espesificado como appDir no existe o esta restringido el acceso.');
+                    throw Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
                 }
             }
             else {
@@ -109,7 +116,6 @@
                 if(method_exists($bdl, 'setup')){
                     call_user_func(array($bdl, 'setup'));
                 }
-                
             }
             //Time to run
             if($autoRun){
@@ -120,26 +126,27 @@
             }
         }
         
-        public function captureNSControllerMethod($ns, $controller, $method, $params='')
-        {
+        public function captureNSControllerMethod($ns, $controller, $method, $params='') {
             $controllerName =
                 static::$controllerNamespace . '\\' .
                 (isset($ns) ? ucwords($ns) . '\\' : '') .
                 ucwords($controller) . static::$classPosfix;
             
-            if(class_exists($controllerName)){
+            if(class_exists($controllerName)) {
                 $inst = new $controllerName();
-                if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))){    
+                if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))) {
                     call_user_func_array(array($inst, $method . ucwords(static::$singleton->router->requestMethod)), $params);
-                }
-                else if(method_exists($inst, $method . ucwords(static::$defaultMethodPosfix))){
-                    call_user_func_array(array($inst, $method . ucwords(static::$defaultMethodPosfix)), preg_split('/\/{1}/', $params));  
-                }
-                else {
+                } else if(method_exists($inst, $method . ucwords(static::$methodPosfix))){
+                    call_user_func_array(array($inst, $method . ucwords(static::$methodPosfix)), preg_split('/\/{1}/', $params));
+                } else {
+                    throw new \Exception("El método \"$method" .
+                        ucwords(static::$singleton->router->requestMethod)."\" or \"" .
+                        $method . ucwords(static::$methodPosfix)."\" no fue encontrado en el controlador $controllerName.");
                     return false;
                 }
-                return true;    
-                
+                return true;
+            } else {
+                throw new \Exception("El controlador \"$controllerName\" no fue encontrado.");
             }
             return false;
         }
@@ -172,19 +179,38 @@
                 $params
             );
         }
-        
-        public function captureAll($params='')
-        {
-            return $this->captureNSControllerMethod(
-                null,
-                static::$defaultController,
-                static::$defaultMethod,
-                $params
-            );
+
+        public function captureDefault() {
+            if(static::$defaultController && static::$defaultMethod){
+                return $this->captureNSControllerMethod(
+                    null,
+                    static::$defaultController,
+                    static::$defaultMethod,
+                    ''
+                );
+            } else {
+                throw new \Exception("No se especificó un controlador ni un metodo por defecto.");
+            }
         }
-                
-        public function errorHandler($req = '/')
-        {
-            throw Exception("El recurso <<".static::$singleton->router->request.">> no se pudo encontrar en este aplicación.");
+
+        public function captureAll($params='') {
+            if(empty($params)) {
+                return $this->captureDefault();
+            } else if(static::$catchAllController && static::$catchAllMethod) {
+                return $this->captureNSControllerMethod(
+                    null,
+                    static::$catchAllController,
+                    static::$catchAllMethod,
+                    $params
+                );
+            } else {
+                throw new \Exception("No se especificó ni un contrador ni un metodo de captura universal.");
+                return false;
+            }
+        }
+
+        public function errorHandler($req = '/') {
+            throw \Exception("El recurso <<".static::$singleton->router->request .
+                ">> no se pudo encontrar en este aplicación.");
         }
     }
