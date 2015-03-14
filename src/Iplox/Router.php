@@ -27,6 +27,8 @@ class Router {
         
     }
 
+    /**** Routes ****/
+
     public function check($req = null, $method=null) {
         if(isset($this->route)){
             $req = $req ? $req : preg_replace($this->regexRoute, '', $this->request);
@@ -88,7 +90,48 @@ class Router {
         return false;
     }
 
-    /**** Routes ****/
+    public function checkRoute($routeSections, $pathSections, $req) {
+        $matches = array();
+        $regexRoute = '';
+        $pathSeparator = '';
+        $resolvedPath = '';
+        foreach($routeSections as $i => $rs) {
+            // Si $rs esta registrado como filtro, se verifica si el valor pasado es válido.
+            if(array_key_exists($rs, $this->filters) &&
+                array_key_exists($i, $pathSections) &&
+                !$this->checkFilter($rs, [$pathSections[$i], $resolvedPath])){
+                return false;
+            }
+
+            // Cada $rs se transformará en un RegexExp que se integrará al regexRoute final que determinará si el route es el correcto.
+            if(preg_match('/^\*\w*/', $rs) === 1) {
+                $regexRoute .= '('.$pathSeparator.'.*)?';
+            }
+            else if(preg_match('/^:\w*/', $rs) === 1) {
+                $regexRoute .= $pathSeparator.'([\w]*)';
+            } else {
+                $regexRoute .= $pathSeparator.$rs;
+            }
+            if(array_key_exists($i, $pathSections)){
+                $resolvedPath .= $pathSections[$i].'/';
+            }
+            $pathSeparator = '\/';
+        }
+        $regexRoute = '/^\/?'.$regexRoute.'/';
+
+        // Se verifica si $req coincide con el $regexRoute construído a partir de la ruta ($routeSections)
+        if(preg_match($regexRoute, $req, $matches) > 0) {
+            array_shift($matches);
+            if(isset($matches[0]) && $matches[0] == '') {
+                array_shift($matches);
+            }
+            // La regexRoute que coincidió con el request.
+            $this->regexRoute = $regexRoute;
+            return $matches;
+        }
+        return false;
+    }
+
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
     public function appendRoutes($routes=array(), $method="ALL") {
         if(array_key_exists($method, $this->routes)) {
@@ -115,43 +158,6 @@ class Router {
         return $this->routes;
     }
 
-    public function checkRoute($routeSections, $pathSections, $req) {
-        $matches = array();
-        $regexRoute = '';
-        $pathSeparator = '';
-        foreach($routeSections as $i => $rs) {
-            // Si $rs esta registrado como filtro, se verifica si el valor pasado es válido.
-            if(array_key_exists($rs, $this->filters) && array_key_exists($i, $pathSections) && !$this->checkFilter($rs, $pathSections[$i])){
-                return false;
-            }
-
-            // Cada $rs se transformará en un RegexExp que se integrará al regexRoute final que determinará si el route es el correcto.
-            if(preg_match('/^\*\w*/', $rs) === 1) {
-                $regexRoute .= '('.$pathSeparator.'.*)?';
-            }
-            else if(preg_match('/^:\w*/', $rs) === 1) {
-                $regexRoute .= $pathSeparator.'([\w]*)';
-            } else {
-                $regexRoute .= $pathSeparator.$rs;
-            }
-            $pathSeparator = '\/';
-        }
-        $regexRoute = '/^\/?'.$regexRoute.'/';
-
-        // Se verifica si $req coincide con el $regexRoute construído a partir de la ruta ($routeSections)
-        if(preg_match($regexRoute, $req, $matches) > 0) {
-            array_shift($matches);
-            if(isset($matches[0]) && $matches[0] == '') {
-                array_shift($matches);
-            }
-            // La regexRoute que coincidió con el request.
-            $this->regexRoute = $regexRoute;
-            return $matches;
-        }
-        return false;
-    }
-    
-    
     
     /**** Filters ****/
     
@@ -169,10 +175,10 @@ class Router {
         return array_key_exists($filter, $this->filters);
     }
     
-    public function checkFilter($filter, $passedVal) {
+    public function checkFilter($filter, $args) {
         foreach($this->filters as $k=> $v) {
             if($k === $filter) {
-                return call_user_func($v, $passedVal);
+                return call_user_func_array($v, $args);
             }
         }
         return false;
@@ -190,7 +196,9 @@ class Router {
             return $this->requestMethod;
         }
     }
-    
+
+    /*****  HTTP Method Verification *****/
+
     //Devuelve true si el método solicitado es GET
     public function isGet() {
         if($_SERVER['REQUEST_METHOD'] === 'GET') {
