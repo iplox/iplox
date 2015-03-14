@@ -13,5 +13,3 @@ namespace Iplox\Mvc {
       public abstract function addPluginsDir($pluginsDir);
    }
 }
-
-?>

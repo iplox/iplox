@@ -7,28 +7,28 @@
     
     class AppController extends Controller
     {
-        public static $controllerNamespace = 'App\Controllers';
+        public static $appNamespace = 'App';
+        public static $controllerNamespace = 'Controllers';
         public static $methodPosfix = 'Action';
+        public static $defaultMethod = 'index';
         public static $classPosfix = 'Controller';
         public static $errorHandler = 'errorHandler';
 
-        // En los casos donde el $req='/', $defaultController y $defaultMethod se usarán para resolver el request.
-        public static $defaultController = null;
-        public static $defaultMethod = null;
+        // Metodos de captura por defecto ($req="/") y global para cuando no haya metodo que coincida.
+        public static $catchDefaultHandler = ['static', 'defaultHandler'];
+        public static $catchAllHandler =  ['static', 'globalHandler'];
 
-        // En caso de que se haga un request que no pueda ser resuelto $catchAllController $catchAllMethod se usaran para resolver el request.
-        public static $catchAllController = null;
-        public static $catchAllMethod = null;
 
         // La unica instancia que tendrá esta clase.
         protected static $singleton;
         
         protected static $requestMethod = 'GET';
         protected static $pluralResourceToControler = true;
-        
-        //Retorna (e instancia si aún no lo está) el singleton
-        public static function getSingleton()
-        {
+
+        public $router = null;
+
+        //Retorna una instancia de la clase: el singleton
+        public static function getSingleton() {
             if(! isset(static::$singleton))
             {
                 static::$singleton = new static();
@@ -36,34 +36,26 @@
             return static::$singleton;
         }
         
-        public static function init($req = '/', $autoRun = true, $appDir = null)
-        {
+        public static function init($appDir = null, $autoRun = true, $req = null) {
             $inst = static::getSingleton();
             $r = $inst->router;
-            $namespace = static::$controllerNamespace;
+
+            // Filters for the MVC Controller functionality
             $r->addFilters(array(
-                ':controller' => function($name) use(&$r, &$namespace) {
-                    if(!isset(static::$pluralResourceToControler)){
-                        $class = $namespace . '\\' . ucwords($name) . 'Controller';
-                        if (class_exists($class, TRUE)){
-                            return true;
-                        }
-                    }
-                    else {
-                        //Con esto se aceptarán los plurales de los controladores.
-                        //Ej: Si se solicita providers se verificaría si existe ProviderController.
-                        $class = $namespace . '\\' . ucwords(preg_replace('/s$/', '', $name)) . 'Controller';
-                        if (class_exists($class, TRUE)) {
-                            return true;
-                        } 
+                ':controller' => function($name, $path) use(&$r, &$namespace) {
+                    $ns = static::$appNamespace . '\\' .
+                        ucwords(preg_replace(['/^\//', '/\//'], ['', '\\'], $path)) .
+                        static::$controllerNamespace . '\\';
+                    $class = $ns . ucwords($name) . 'Controller';
+                    if (class_exists($class, TRUE)){
+                        return true;
                     }
                     return false;
                 },
                 ':num'=> function($val){
                     if(is_numeric($val)){
                         return true;
-                    }
-                    else {
+                    } else {
                         return false;
                     }
                 }
@@ -86,8 +78,7 @@
             //Config of the Enviroment
             if(!isset($_IPLOXENV)) {
                 Cfg::setEnv('DEVELOPMENT');                
-            }
-            else {
+            } else {
                 Cfg::setEnv($_IPLOXENV);   
             }
                       
@@ -95,18 +86,16 @@
             if(isset($appDir)){
                 if(is_readable($appDir)){
                     Cfg::setAppDir($appDir);
+                } else {
+                    throw \Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
                 }
-                else {
-                    throw Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
-                }
-            }
-            else {
+            } else {
                 Cfg::setAppDir(dirname($rc->getFileName())); 
             }
             
             //Config of the Application Namespace
-            Cfg::setAppNamespace($rc->getNamespaceName()); 
-            
+//            Cfg::setAppNamespace('\\');
+
             //Setup of all bundles.
             $gral = Cfg::get('Bundles');
             $rc = new \ReflectionClass($gral);
@@ -117,21 +106,32 @@
                     call_user_func(array($bdl, 'setup'));
                 }
             }
+
             //Time to run
             if($autoRun){
-                if(!isset($req)) {
-                    $req = $_SERVER['REQUEST_URI'];
-                }
-                $r->check($req);
+                $inst->run($req);
             }
+
+            return $inst;
+        }
+
+        // Run the app by matching requeset to routes and handling methods.
+        public function run($req = null){
+            $r = static::getSingleton()->router;
+            if(!isset($req)) {
+                $req = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
+                $req = empty($req) ? '/' : $req;
+            }
+            $r->check($req);
         }
         
         public function captureNSControllerMethod($ns, $controller, $method, $params='') {
             $controllerName =
-                static::$controllerNamespace . '\\' .
+                static::$appNamespace . '\\' .
                 (isset($ns) ? ucwords($ns) . '\\' : '') .
+                static::$controllerNamespace . '\\' .
                 ucwords($controller) . static::$classPosfix;
-            
+
             if(class_exists($controllerName)) {
                 $inst = new $controllerName();
                 if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))) {
@@ -151,8 +151,7 @@
             return false;
         }
         
-        public function captureNSController($ns, $controller)
-        {
+        public function captureNSController($ns, $controller) {
             return $this->captureNSControllerMethod(
                 $ns,
                 $controller,
@@ -160,8 +159,7 @@
             );
         }
         
-        public function captureControllerMethod($controller, $method, $params='')
-        {
+        public function captureControllerMethod($controller, $method, $params='') {
             return $this->captureNSControllerMethod(
                 null,
                 $controller,
@@ -170,8 +168,7 @@
             );
         }
         
-        public function captureController($controller, $params='')
-        {
+        public function captureController($controller, $params='') {
             return $this->captureNSControllerMethod(
                 null,
                 $controller,
@@ -180,37 +177,26 @@
             );
         }
 
-        public function captureDefault() {
-            if(static::$defaultController && static::$defaultMethod){
-                return $this->captureNSControllerMethod(
-                    null,
-                    static::$defaultController,
-                    static::$defaultMethod,
-                    ''
-                );
-            } else {
-                throw new \Exception("No se especificó un controlador ni un metodo por defecto.");
-            }
-        }
-
         public function captureAll($params='') {
             if(empty($params)) {
-                return $this->captureDefault();
-            } else if(static::$catchAllController && static::$catchAllMethod) {
-                return $this->captureNSControllerMethod(
-                    null,
-                    static::$catchAllController,
-                    static::$catchAllMethod,
-                    $params
-                );
+                if (is_callable(static::$catchDefaultHandler)) {
+                    return call_user_func(static::$catchDefaultHandler);
+                }
+                throw new \Exception("A \"catchDefaultHandler\" was not provided or is not valid.");
             } else {
-                throw new \Exception("No se especificó ni un contrador ni un metodo de captura universal.");
-                return false;
+                if (is_callable(static::$catchAllHandler)) {
+                    return call_user_func(static::$catchAllHandler, $params);
+                }
+                throw new \Exception("A \"catchAllHandler\" was not provided or is not valid.");
             }
+            return false;
         }
 
-        public function errorHandler($req = '/') {
-            throw \Exception("El recurso <<".static::$singleton->router->request .
-                ">> no se pudo encontrar en este aplicación.");
+        public static function globalHandler ($param) {
+            echo "<h2>No existe el recurso solicitado</h2>Este es el metodo de captura global por defecto.";
+        }
+
+        public static function defaultHandler() {
+            echo "<h2>Welcome</h2>Este es el metodo de captura por defecto.";
         }
     }
