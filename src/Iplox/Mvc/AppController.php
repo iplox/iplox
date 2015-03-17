@@ -74,14 +74,7 @@
             /**** Configurations ****/
             //Reflection Class
             $rc = new \ReflectionClass(\get_called_class());
-                
-            //Config of the Enviroment
-            if(!isset($_IPLOXENV)) {
-                Cfg::setEnv('DEVELOPMENT');                
-            } else {
-                Cfg::setEnv($_IPLOXENV);   
-            }
-                      
+
             //Config of the Application Dir.
             if(isset($appDir)){
                 if(is_readable($appDir)){
@@ -94,7 +87,7 @@
             }
 
             //Config of the Application Namespace
-            if(isset(static::$appNamespace)){
+            if(isset(static::$appNamespace)) {
                 Cfg::setAppNamespace(static::$appNamespace);
             } else {
                 Cfg::setAppNamespace('');
