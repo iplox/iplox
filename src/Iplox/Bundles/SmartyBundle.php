@@ -21,19 +21,19 @@ class SmartyBundle extends View {
       
       $base = Cfg::getAppDir().DIRECTORY_SEPARATOR.$gralCfg::VIEWS_DIR.DIRECTORY_SEPARATOR;
 
-      if($viewCfg::TEMPLATE_DIR){
+      if($viewCfg::TEMPLATE_DIR) {
          static::$singleton->setTemplateDir($base.$viewCfg::TEMPLATE_DIR);
       }
       
-      if($viewCfg::CACHE_DIR){
+      if($viewCfg::CACHE_DIR) {
          static::$singleton->setCacheDir($base.$viewCfg::CACHE_DIR);
       }
       
-      if($viewCfg::COMPILE_DIR){
+      if($viewCfg::COMPILE_DIR) {
          static::$singleton->setCompileDir($base.$viewCfg::COMPILE_DIR);
       }
       
-      if($viewCfg::PLUGINS_DIR){
+      if($viewCfg::PLUGINS_DIR) {
          static::$singleton->addPluginsDir($base.$viewCfg::PLUGINS_DIR);
       }
       
@@ -42,20 +42,19 @@ class SmartyBundle extends View {
      
    public static function getSingleton(){
       //Si no existe el singleton se crea y se devuelve.
-      if(!isset(static::$singleton)){
+      if(!isset(static::$singleton)) {
          static::$singleton = new static();
          return static::$singleton;
-      }
-      else { 
+      } else {
          return static::$singleton;
       }
    }
      
-   public function display($templateFile){
+   public function display($templateFile) {
       $this->viewEngine->display($templateFile);
    }
    
-   public function assign($arrOrVarName, $arr=null){
+   public function assign($arrOrVarName, $arr=null) {
       $this->viewEngine->assign($arrOrVarName, $arr);
    }
    
@@ -78,6 +77,7 @@ class SmartyBundle extends View {
       $this->viewEngine->addPluginsDir($pluginsDir);
       return $this;
    }
+
    public function setPluginsDir($pluginsDirs){
       $this->viewEngine->setPluginsDir($pluginsDirs);
       return $this;

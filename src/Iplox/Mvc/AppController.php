@@ -92,9 +92,13 @@
             } else {
                 Cfg::setAppDir(dirname($rc->getFileName())); 
             }
-            
+
             //Config of the Application Namespace
-//            Cfg::setAppNamespace('\\');
+            if(isset(static::$appNamespace)){
+                Cfg::setAppNamespace(static::$appNamespace);
+            } else {
+                Cfg::setAppNamespace('');
+            }
 
             //Setup of all bundles.
             $gral = Cfg::get('Bundles');
