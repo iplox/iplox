@@ -9,8 +9,7 @@
         protected $env;
         
         //Crea y/o retorna el singleton.
-        public static function getSingleton()
-        {
+        public static function getSingleton() {
             if(! isset(static::$singleton)){
                 static::$singleton = new static();
             }
@@ -31,48 +30,38 @@
         }
         
         //Set the namespace of the application
-        public static function setAppNamespace($ns)
-        {
+        public static function setAppNamespace($ns) {
             $singleton = static::getSingleton();
             $singleton->appNamespace = $ns;
         }
                
-        public static function getAppNamespace(){
+        public static function getAppNamespace() {
             $singleton = static::getSingleton();
             return $singleton->appNamespace;
         }
         
         //Set the enviroment 
-        public static function setEnv($env)
-        {
+        public static function setEnv($env) {
             $singleton = static::getSingleton();
             $singleton->env = $env;
         }
         //Return the enviroment value.
-        public static function getEnv(){
+        public static function getEnv() {
             $singleton = static::getSingleton();
             return $singleton->env;
         }
         
         //Return a configuration class, if exists under the conventional configuration directories
-        public static function get($cfg)
-        {
+        public static function get($cfg) {
             $inst = static::getSingleton();
-            if(! isset($cfg))
-            {
+            if(! isset($cfg)) {
                 return null;
-            }
-            else if(class_exists($class = $inst->appNamespace."\\Config\\".$cfg."Config"))
-            {
-                return $class;                
-            }
-            else if(class_exists($class = $inst->appNamespace."\\Config\\".$inst->env."\\$cfg"."Config"))
-            {
-                return $class;                
-            }
-            else
-            {
-                return "Iplox\\Config\\".$cfg."Config"; 
+            } else if(class_exists($class = $inst->appNamespace."\\Config\\".$inst->env."\\$cfg"."Config")) {
+                return $class;
+            } else if(class_exists($class = $inst->appNamespace."\\Config\\".$cfg."Config")) {
+                return $class;
+            } else {
+                return "Iplox\\Config\\".$cfg."Config";
             }
         }
         
