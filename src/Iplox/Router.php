@@ -19,6 +19,7 @@ class Router {
 
     /**** Routes ****/
 
+    //Scan all routes until it gets one that matches the request.
     public function check($req = null, $method=null) {
         if(isset($this->route)){
             $req = $req ? $req : preg_replace($this->regexRoute, '', $this->request);
@@ -40,51 +41,68 @@ class Router {
 
         //
         foreach($routeList as $endpoint => $callback) {
-            $routeSections = preg_split('/\/{1}/', $endpoint);
-            array_shift($routeSections);
-            if(count($routeSections)==1 && empty($routeSections[0])) {
-                $routeSections= [];
-            }
+            //Esta es la ruta?
+            $matches = $this->checkRoute($endpoint, $req);
+            if(is_array($matches)) {
+                //Si, lo es.
 
-            $pathSections = preg_split('/\/{1}/', $req);
-            array_shift($pathSections);
-
-            //El catchAll (*) filter type allow to match 0 path section as 1 or even more. For that reason the -1 operation.
-            if((count($routeSections) - 1) > count($pathSections)) {
-                continue;
-            } else {
-                //Esta es la ruta?
-                $matches = $this->checkRoute($routeSections, $pathSections, $req);
-                if(is_array($matches)) {
-                    //Si, lo es. Ahora se le asignaran los valores de la ruta, verbo y de la solicitud.
+                if(is_callable($callback)) {
+                    //Ahora se le asignaran los valores de la ruta, metodo y de la solicitud.
                     $this->request = $req;
                     $this->route = $endpoint;
                     $this->requestMethod = $method;
 
                     //Se resetean las rutas. Para que se puedan agregar nuevas si así se desea.
-                    $this->routes[$method] = array();
-
-                    if(is_callable($callback)) {
-                        //Se llama a la función de callback y se pasan los parámetros de la url solicitada
-                        call_user_func_array($callback, $matches);
-                        return true;
+                    $this->resetRoutes($method);
+                    //Se llama a la función de callback y se pasan los parámetros de la url solicitada
+                    call_user_func_array($callback, $matches);
+                    return true;
+                } else if(is_string($callback) || is_array($callback)) {
+                    // What if $callback is a string? It means, it's a request.
+                    if(is_string($callback)){
+                        // Same method
+                        $method = $this->requestMethod;
+                        $req = $callback;
                     } else {
-                        throw new \Exception("Not valid callable entity was provided as handler to the route $req.");
+                        // Method is optionally specified in the request array.
+                        $method = array_key_exists('method', $callback) ? $callback['method'] : $this->requestMethod;
+
+                        if(array_key_exists('request', $callback) && is_string($callback['request'])) {
+                            $req = $callback['request'];
+                        } else {
+                            throw new \Exception('The forwarding request was not specified or the type is invalid.');
+                        }
                     }
+                    $rg = [];
+                    foreach($matches as $i => $v){
+                        array_push($rg, '/\{\$'. ($i) . '\}/');
+                    }
+
+                    $req = preg_replace($rg, $matches, $req);
+                    if(preg_match('/\{\$\d+\}/', $req) > 0){
+                        throw new \Exception('Incorrect variable number in request redirect. The maximum value variable is {$'. (count($matches)-1).'}');
+                    }
+                    return $this->check($req, $method);
                 } else {
-                    //No, lo es. Continua con los otros endpoints.
-                    continue;
+                    throw new \Exception("Not valid callable entity was provided as handler to the route $req.");
                 }
+            } else {
+                //No, lo es. Continua con los otros endpoints.
+                continue;
             }
         }
         return false;
     }
 
-    public function checkRoute($routeSections, $pathSections, $req) {
-        $matches = array();
+    //Validate a route. Returns an array of params if valid, false if not.
+    public function checkRoute($route, $req) {
+        $matches = [];
         $regexRoute = '';
-        $pathSeparator = '';
+        $pathSeparator = '\/';
         $resolvedPath = '';
+        $routeSections = preg_split('/\//', preg_replace('/^\//', '', $route));
+        $pathSections = preg_split('/\//', preg_replace('/^\//', '', $req));
+
         foreach($routeSections as $i => $rs) {
             // Si $rs esta registrado como filtro, se verifica si el valor pasado es válido.
             if(array_key_exists($rs, $this->filters) &&
@@ -93,28 +111,42 @@ class Router {
                 return false;
             }
 
-            // Cada $rs se transformará en un RegexExp que se integrará al regexRoute final que determinará si el route es el correcto.
-            if(preg_match('/^\*\w*/', $rs) === 1) {
-                $regexRoute .= '('.$pathSeparator.'.*)?';
-            }
-            else if(preg_match('/^:\w*/', $rs) === 1) {
-                $regexRoute .= $pathSeparator.'([\w]*)';
+            // Cada $rs se transformará en una RegExp ($rg) que luego se integrará al RegExp final que determinará si el route es el correcto.
+            if(preg_match('/:\w*/', $rs) > 0){
+                $regexRoute .= preg_replace(
+                    ['/:\w*/', '/\)\?/', '/\)\)/', '/\(\(/'],
+                    ['('.$pathSeparator.'[^\/]+'.')', ')?', ')', '('],
+                    $rs);
+            } else if(preg_match('/\*\w*/', $rs) > 0){
+                $regexRoute .= preg_replace(
+                    ['/\*\w*/', '/\)\?/','/\(\(/', '/\)\)/'],
+                    ['(.+)', ')?','(',')'],
+                    $rs);
             } else {
-                $regexRoute .= $pathSeparator.$rs;
+                $regexRoute .= preg_replace(
+                    ['/\w+/', '/\)\?/', '/\(\(/', '/\)\)/'],
+                    [$pathSeparator.'\w+', ')?', '(', ')'],
+                    $rs);
             }
+            $pathSeparator = '\/';
+
             if(array_key_exists($i, $pathSections)){
                 $resolvedPath .= $pathSections[$i].'/';
             }
-            $pathSeparator = '\/';
         }
-        $regexRoute = '/^\/?'.$regexRoute.'/';
+        //The actual regular expression generated.
+        $regexRoute = '/^'.$regexRoute.'/';
 
         // Se verifica si $req coincide con el $regexRoute construído a partir de la ruta ($routeSections)
         if(preg_match($regexRoute, $req, $matches) > 0) {
+            //This remove the first element matched which is not required.
             array_shift($matches);
-            if(isset($matches[0]) && $matches[0] == '') {
-                array_shift($matches);
+
+            //This remove the slash (/) from the beginning of all matched values.
+            foreach($matches as $i=>$m){
+                $matches[$i] = preg_replace('/^\//', '', $m);
             }
+
             // La regexRoute que coincidió con el request.
             $this->regexRoute = $regexRoute;
             return $matches;

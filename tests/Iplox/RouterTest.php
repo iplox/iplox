@@ -48,6 +48,8 @@ class RouterTest extends PHPUnit_Framework_TestCase {
         $a6 = $r->checkRoute('/:a/:b/(*params)?', '/section-a/section-b/section-c/section-d');
         $a7 = $r->checkRoute('/:a/:b', '/section-a');
         $a8 = $r->checkRoute('/any', '/any/path');
+        $a9 = $r->checkRoute('/this/is/(it)?', '/this/is');
+        $a10 = $r->checkRoute('/this/is/(it)?', '/this/is/it');
 
         $this->assertEquals($e2, $a1, 'Expected an array of two (2) elements.');
         $this->assertEquals($e1, $a2,'The route with (:b)? means expects an optional. Failed when not passed.');
@@ -59,5 +61,8 @@ class RouterTest extends PHPUnit_Framework_TestCase {
 
         $this->assertFalse($a7, "The route '/:a/:b' matches wrongly the request '/section-a must'.");
         $this->assertEquals([], $a8, "The route '/any' does not match the request '/any/path'.");
+        $this->assertEquals([], $a8, "The route '/any' does not match the request '/any/path'.");
+        $this->assertEquals([], $a9, "The route '/this/is/(it)?' does not match the request '/this/is'.");
+        $this->assertEquals(['it'], $a10, "The route '/this/is/(it)?' does not match the request '/this/is/it'.");
     }
 }
