@@ -27,10 +27,12 @@
 
         public $router = null;
 
+        // This object can't be instantiated. Use the getSingleton method to retrieved the only instance of this class.
+        private function __construct(){}
+
         //Retorna una instancia de la clase: el singleton
         public static function getSingleton() {
-            if(! isset(static::$singleton))
-            {
+            if(! isset(static::$singleton)) {
                 static::$singleton = new static();
             }
             return static::$singleton;
@@ -63,11 +65,11 @@
             
             //Determine if any of this routes actually exists as an object
             $r->appendRoutes([
-                '/:namespace/:controller/:method/*params'=>  array(static::$singleton, 'captureNSControllerMethod'),
-                '/:namespace/:controller/*params'=>  array(static::$singleton, 'captureNSController'),
-                '/:controller/:method/*params'=>  array(static::$singleton, 'captureControllerMethod'),
-                '/:controller/*param' => array(static::$singleton, 'captureController'),
-                '/*param' => array(static::$singleton, 'captureAll')
+                '/:namespace/:controller/:method/(*params)?'=>  array(static::$singleton, 'captureNSControllerMethod'),
+                '/:namespace/:controller/(*params)?'=>  array(static::$singleton, 'captureNSController'),
+                '/:controller/:method/(*params)?'=>  array(static::$singleton, 'captureControllerMethod'),
+                '/:controller/(*param)?' => array(static::$singleton, 'captureController'),
+                '/(*param)?' => array(static::$singleton, 'captureAll')
             ]);
             
             
@@ -132,7 +134,7 @@
             if(class_exists($controllerName)) {
                 $inst = new $controllerName();
                 if(method_exists($inst, $method . ucwords(static::$singleton->router->requestMethod))) {
-                    call_user_func_array(array($inst, $method . ucwords(static::$singleton->router->requestMethod)), $params);
+                    call_user_func_array(array($inst, $method . ucwords(static::$singleton->router->requestMethod)), preg_split('/\/{1}/', $params));
                 } else if(method_exists($inst, $method . ucwords(static::$methodPosfix))){
                     call_user_func_array(array($inst, $method . ucwords(static::$methodPosfix)), preg_split('/\/{1}/', $params));
                 } else {
