@@ -11,20 +11,10 @@ class Router {
     protected $requestMethod;
     protected $filters;
     
-    function __construct()
-    {
-        $this->routes = array
-        (
-            'GET'=> array(),
-            'POST'=> array(),
-            'PUT'=> array(),
-            'DELETE'=> array(),
-            'ALL'=> array()
-        );
+    function __construct() {
+        $this->resetRoutes();
         $this->filters = array();
-        
         $this->goHandlers = array();
-        
     }
 
     /**** Routes ****/
@@ -233,5 +223,21 @@ class Router {
         } else {
             return false;
         }
-    }       
+    }
+
+    //Clear routes. If a method is provided clear only that specifics.
+    public function resetRoutes($method = null) {
+        $resetValues =  [
+            'GET'=>[],
+            'POST'=>[],
+            'DELETE'=>[],
+            'PUT'=>[],
+            'ALL'=>[]
+        ];
+        if(!is_null($method) && array_key_exists(strtoupper($method), $resetValues)) {
+            $this->routes[strtoupper($method)] = [];
+        } else {
+            $this->routes = $resetValues;
+        }
+    }
 }
