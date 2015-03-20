@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" ?>
-<phpunit bootstrap="./vendor/autoload.php" color="true">
+<phpunit bootstrap="./vendor/autoload.php"
+         color="true"
+         convertErrorsToExceptions="true"
+         convertNoticeToExceptions="true"
+         convertWarningsToExceptions="true"
+         stopOnFailures="false"
+         syntaxCheck="false"
+        >
     <testsuites>
         <testsuite name="IploxPhp Unit Tests">
             <directory>./tests</directory>
