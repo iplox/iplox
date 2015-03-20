@@ -1,12 +1,11 @@
 <?php
 
     namespace Iplox\Mvc;
-    use Iplox\Mvc\Controller;
+    use Iplox\Router;
     use Iplox\Config as Cfg;
     use Iplox\Bundle;
-    
-    class AppController extends Controller
-    {
+
+    class AppController {
         public static $appNamespace = 'App';
         public static $controllerNamespace = 'Controllers';
         public static $methodPosfix = 'Action';
@@ -25,10 +24,15 @@
         protected static $requestMethod = 'GET';
         protected static $pluralResourceToControler = true;
 
+        // Status of the app.
+        protected static $started = false;
+
         public $router = null;
 
         // This object can't be instantiated. Use the getSingleton method to retrieved the only instance of this class.
-        private function __construct(){}
+        protected function __construct(){
+            $this->router = new Router();
+        }
 
         //Retorna una instancia de la clase: el singleton
         public static function getSingleton() {
@@ -108,14 +112,15 @@
 
             //Time to run
             if($autoRun){
-                $inst->run($req);
+                $inst->start($req);
             }
 
             return $inst;
         }
 
         // Run the app by matching requeset to routes and handling methods.
-        public function run($req = null){
+        public function start($req = null){
+            static::$started = true;
             $r = static::getSingleton()->router;
             if(!isset($req)) {
                 $req = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
@@ -197,5 +202,11 @@
 
         public static function defaultHandler() {
             echo "<h2>Welcome</h2>Este es el metodo de captura por defecto.";
+        }
+
+        /**** Useful Methods ****/
+
+        public function isStarted() {
+            return static::$started;
         }
     }
