@@ -1,12 +1,9 @@
 <?php
 
-namespace Iplox\Config;
-
-class DbConfig
-{
+return [
    //This could be MySQL, PostgreSQL, OracleDB, MSSQL, MongoDB, etc.
-   const PROVIDER = 'MySQL';
-   const NAME = 'ExampleDb';
-   const USER = 'root';
-   const PASSWORD = '';
-}
+   'provider' => 'MySQL',
+   'name' => 'ExampleDb',
+   'user' => 'root',
+   'password' => ''
+];

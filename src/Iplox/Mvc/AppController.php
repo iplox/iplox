@@ -20,7 +20,7 @@
 
         // La unica instancia que tendrá esta clase.
         protected static $singleton;
-        
+
         protected static $requestMethod = 'GET';
         protected static $pluralResourceToControler = true;
 
@@ -41,7 +41,7 @@
             }
             return static::$singleton;
         }
-        
+
         public static function init($appDir = null, $autoRun = true, $req = null) {
             $inst = static::getSingleton();
             $r = $inst->router;
@@ -66,7 +66,7 @@
                     }
                 }
             ));
-            
+
             //Determine if any of this routes actually exists as an object
             $r->appendRoutes([
                 '/:namespace/:controller/:method/(*params)?'=>  array(static::$singleton, 'captureNSControllerMethod'),
@@ -75,8 +75,8 @@
                 '/:controller/(*param)?' => array(static::$singleton, 'captureController'),
                 '/(*param)?' => array(static::$singleton, 'captureAll')
             ]);
-            
-            
+
+
             /**** Configurations ****/
             //Reflection Class
             $rc = new \ReflectionClass(\get_called_class());
@@ -86,10 +86,10 @@
                 if(is_readable($appDir)){
                     Cfg::setAppDir($appDir);
                 } else {
-                    throw \Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
+                    throw new \Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
                 }
             } else {
-                Cfg::setAppDir(dirname($rc->getFileName())); 
+                Cfg::setAppDir(dirname($rc->getFileName()));
             }
 
             //Config of the Application Namespace
@@ -100,9 +100,7 @@
             }
 
             //Setup of all bundles.
-            $gral = Cfg::get('Bundles');
-            $rc = new \ReflectionClass($gral);
-            $bundles = $rc->getConstants();
+            $bundles = Cfg::get('Bundles');
             foreach($bundles as $name => $value){
                 $bdl = Bundle::get(ucwords($name));
                 if(method_exists($bdl, 'setup')){
@@ -128,7 +126,7 @@
             }
             $r->check($req);
         }
-        
+
         public function captureNSControllerMethod($ns, $controller, $method, $params='') {
             $controllerName =
                 static::$appNamespace . '\\' .
@@ -154,7 +152,7 @@
             }
             return false;
         }
-        
+
         public function captureNSController($ns, $controller) {
             return $this->captureNSControllerMethod(
                 $ns,
@@ -162,7 +160,7 @@
                 static::$defaultMethod
             );
         }
-        
+
         public function captureControllerMethod($controller, $method, $params='') {
             return $this->captureNSControllerMethod(
                 null,
@@ -171,7 +169,7 @@
                 $params
             );
         }
-        
+
         public function captureController($controller, $params='') {
             return $this->captureNSControllerMethod(
                 null,

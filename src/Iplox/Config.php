@@ -1,13 +1,13 @@
 <?php
 
     namespace Iplox;
-    
+
     class Config {
         protected static $singleton;
         protected $appDir;
         protected $appNamespace;
         protected $env;
-        
+
         //Crea y/o retorna el singleton.
         public static function getSingleton() {
             if(! isset(static::$singleton)){
@@ -15,32 +15,32 @@
             }
             return static::$singleton;
         }
-        
+
         //Set the directory of the application
         public static function setAppDir($dir)
         {
             $singleton = static::getSingleton();
             $singleton->appDir = $dir;
         }
-        
+
         //Return the application namespace
         public static function getAppDir(){
             $singleton = static::getSingleton();
             return $singleton->appDir;
         }
-        
+
         //Set the namespace of the application
         public static function setAppNamespace($ns) {
             $singleton = static::getSingleton();
             $singleton->appNamespace = $ns;
         }
-               
+
         public static function getAppNamespace() {
             $singleton = static::getSingleton();
             return $singleton->appNamespace;
         }
-        
-        //Set the enviroment 
+
+        //Set the enviroment
         public static function setEnv($env) {
             $singleton = static::getSingleton();
             $singleton->env = $env;
@@ -50,19 +50,20 @@
             $singleton = static::getSingleton();
             return $singleton->env;
         }
-        
-        //Return a configuration class, if exists under the conventional configuration directories
-        public static function get($cfg) {
+
+        //Return a configuration array, if exists under the conventional configuration directories
+        public static function get($cfgFile) {
             $inst = static::getSingleton();
-            if(! isset($cfg)) {
+            if (!isset($cfgFile)) {
                 return null;
-            } else if(class_exists($class = $inst->appNamespace."\\Config\\".$inst->env."\\$cfg"."Config")) {
-                return $class;
-            } else if(class_exists($class = $inst->appNamespace."\\Config\\".$cfg."Config")) {
-                return $class;
+            } else if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $inst->env . DIRECTORY_SEPARATOR . "$cfgFile" . "Config.php")) {
+                $cfg = @include $fName;
+            } else if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")) {
+                $cfg = @include $fName;
             } else {
-                return "Iplox\\Config\\".$cfg."Config";
+                $cfg = @include $inst->env . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php";
             }
+            return $cfg;
         }
-        
+
     }
