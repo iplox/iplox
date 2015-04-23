@@ -4,13 +4,13 @@ namespace Iplox;
 
 class Router {
     public $routes;
-    
+
     protected $route;
     protected $regexRoute;
     protected $request;
     protected $requestMethod;
     protected $filters;
-    
+
     function __construct() {
         $this->resetRoutes();
         $this->filters = array();
@@ -19,7 +19,14 @@ class Router {
 
     /**** Routes ****/
 
-    //Scan all routes until it gets one that matches the request.
+    /**
+     * Resolve the request and execute any handler method previewsly added.
+     * Take the requestUri and verify each route expecting to find a match.
+     * @param string $reqUri The Uri to be requested. default
+     * @param string $method The HTTP verb [GET|POST|PUT|DELETE] to be requested.
+     * @return bool Returns true if any route was matched, false if not.
+     * @api
+     */
     public function check($req = null, $method=null) {
         if(isset($this->route)){
             $req = $req ? $req : preg_replace($this->regexRoute, '', $this->request);
@@ -94,7 +101,14 @@ class Router {
         return false;
     }
 
-    //Validate a route. Returns an array of params if valid, false if not.
+    /**
+     * Check a route against the requestUri.
+     * Verify if a request match a provided route.
+     * @param string $route The route to be verify.
+     * @param string $requestUri the Uri to check against.
+     * @return $mixed It returns an array of segment matches when the route match the request. It returns false if not.
+     * @api
+     */
     public function checkRoute($route, $req) {
         $matches = [];
         $regexRoute = '';
@@ -160,7 +174,7 @@ class Router {
             $this->routes[$method] = array_merge($this->routes[$method], $routes);
         }
     }
-    
+
     //Agrega rutas al inicio del arreglo de rutas.
     public function prependRoutes($routes=array(), $method="ALL") {
         if(array_key_exists($method, $this->routes)) {
@@ -169,34 +183,34 @@ class Router {
                 if(array_key_exists($k, $this->routes[$method])) {
                     $this->routes[$method] = $v;
                 } else {
-                    $tmpArray[$k] = $v; 
+                    $tmpArray[$k] = $v;
                 }
                 $this->routes[$method] = array_merge($tmpArray, $this->routes[$method]);
             }
         }
     }
-    
+
     public function getRoutes() {
         return $this->routes;
     }
 
-    
+
     /**** Filters ****/
-    
+
     public function addFilter($filterName, $filterHandler) {
         $this->filters["$filterName"] = $filterHandler;
     }
-    
+
     public function addFilters($filters=array()) {
         foreach($filters as $filter => $handler) {
             $this->addFilter($filter, $handler);
         }
     }
-    
+
     public function isFilter($filter) {
         return array_key_exists($filter, $this->filters);
     }
-    
+
     public function checkFilter($filter, $args) {
         foreach($this->filters as $k=> $v) {
             if($k === $filter) {
@@ -205,10 +219,10 @@ class Router {
         }
         return false;
     }
-            
-            
+
+
     /**** Properties ****/
-    
+
     public function __get($name) {
         if($name === 'route') {
             return $this->route;
@@ -229,7 +243,7 @@ class Router {
             return false;
         }
     }
-    
+
     //Devuelve true si el metodo solicitado es POST
     public function isPost() {
         if($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -238,7 +252,7 @@ class Router {
             return false;
         }
     }
-    
+
     //Devuelve tru si el metodo solicitado es PUT
     public function isPut() {
         if($_SERVER['REQUEST_METHOD'] === 'PUT') {
@@ -247,7 +261,7 @@ class Router {
             return false;
         }
     }
-    
+
     //Devuelve tru si el metodo solicitado es DELETE
     public function isDelete() {
         if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
