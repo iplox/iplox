@@ -6,16 +6,16 @@
     use Iplox\Bundle;
 
     class AppController {
-        public static $appNamespace = 'App';
-        public static $controllerNamespace = 'Controllers';
-        public static $methodPosfix = 'Action';
-        public static $defaultMethod = 'index';
-        public static $classPosfix = 'Controller';
-        public static $errorHandler = 'errorHandler';
+        protected static $appNamespace = 'App';
+        protected static $controllerNamespace = 'Controllers';
+        protected static $methodPosfix = 'Action';
+        protected static $defaultMethod = 'index';
+        protected static $classPosfix = 'Controller';
+        protected static $errorHandler = 'errorHandler';
 
         // Metodos de captura por defecto ($req="/") y global para cuando no haya metodo que coincida.
-        public static $catchDefaultHandler = ['static', 'defaultHandler'];
-        public static $catchAllHandler =  ['static', 'globalHandler'];
+        protected static $catchDefaultHandler = ['static', 'defaultHandler'];
+        protected static $catchAllHandler =  ['static', 'globalHandler'];
 
 
         // La unica instancia que tendrá esta clase.
@@ -42,9 +42,26 @@
             return static::$singleton;
         }
 
-        public static function init($appDir = null, $autoRun = true, $req = null) {
+        public static function init($req = null, $appDir = null, $appNamespace = null, $autoRun = true) {
             $inst = static::getSingleton();
             $r = $inst->router;
+
+            //Config of the Application Dir.
+            if(isset($appDir)){
+                if(is_readable($appDir)){
+                    Cfg::setAppDir($appDir);
+                } else {
+                    throw new \Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
+                }
+            } else {
+                Cfg::setAppDir(dirname($rc->getFileName()));
+            }
+
+            //Config of the Application Namespace
+            if(! empty($appNamespace)) {
+                static::$appNamespace = $appNamespace;
+            }
+            Cfg::setAppNamespace(static::$appNamespace);
 
             // Filters for the MVC Controller functionality
             $r->addFilters(array(
@@ -81,24 +98,6 @@
             //Reflection Class
             $rc = new \ReflectionClass(\get_called_class());
 
-            //Config of the Application Dir.
-            if(isset($appDir)){
-                if(is_readable($appDir)){
-                    Cfg::setAppDir($appDir);
-                } else {
-                    throw new \Exception('El directorio especificado como appDir no existe o tiene acceso restringido.');
-                }
-            } else {
-                Cfg::setAppDir(dirname($rc->getFileName()));
-            }
-
-            //Config of the Application Namespace
-            if(isset(static::$appNamespace)) {
-                Cfg::setAppNamespace(static::$appNamespace);
-            } else {
-                Cfg::setAppNamespace('');
-            }
-
             //Setup of all bundles.
             $bundles = Cfg::get('Bundles');
             foreach($bundles as $name => $value){
@@ -107,7 +106,6 @@
                     call_user_func(array($bdl, 'setup'));
                 }
             }
-
             //Time to run
             if($autoRun){
                 $inst->start($req);
