@@ -19,22 +19,22 @@ class SmartyBundle extends View {
       $viewCfg = Cfg::get('Smarty');
       $gralCfg = Cfg::get('General');
       
-      $base = Cfg::getAppDir().DIRECTORY_SEPARATOR.$gralCfg::VIEWS_DIR.DIRECTORY_SEPARATOR;
+      $base = Cfg::getAppDir().DIRECTORY_SEPARATOR.$gralCfg['views_dir'].DIRECTORY_SEPARATOR;
 
       if($viewCfg::TEMPLATE_DIR) {
-         static::$singleton->setTemplateDir($base.$viewCfg::TEMPLATE_DIR);
+         static::$singleton->setTemplateDir($base.$viewCfg['templates_dir']);
       }
       
       if($viewCfg::CACHE_DIR) {
-         static::$singleton->setCacheDir($base.$viewCfg::CACHE_DIR);
+         static::$singleton->setCacheDir($base.$viewCfg['cache_dir']);
       }
       
       if($viewCfg::COMPILE_DIR) {
-         static::$singleton->setCompileDir($base.$viewCfg::COMPILE_DIR);
+         static::$singleton->setCompileDir($base.$viewCfg['compile_dir']);
       }
       
       if($viewCfg::PLUGINS_DIR) {
-         static::$singleton->addPluginsDir($base.$viewCfg::PLUGINS_DIR);
+         static::$singleton->addPluginsDir($base.$viewCfg['plugins_dir']);
       }
       
       static::$singleton->base = $base;

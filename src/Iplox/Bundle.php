@@ -10,20 +10,13 @@ class Bundle {
     {
         $gral = Cfg::get('General');
         
-        if(! isset($bdl))
-        {
+        if(! isset($bdl)) {
             return null;
-        }
-        else if(class_exists($class = Cfg::getAppNamespace()."\\".$gral::BUNDLES_DIR."\\".$bdl."Bundle"))
-        {
+        } else if(class_exists($class = Cfg::getAppNamespace()."\\".$gral['bundles_dir']."\\".$bdl."Bundle")) {
             return $class;                
-        }
-        else if(class_exists($class = Cfg::getAppNamespace()."\\".$gral::BUNDLES_DIR."\\".Cfg::getEnv()."\\$bdl"."Bundle"))
-        {
+        } else if(class_exists($class = Cfg::getAppNamespace()."\\".$gral['bundles_dir']."\\".Cfg::getEnv()."\\$bdl"."Bundle")) {
             return $class;                
-        }
-        else
-        {
+        } else {
             return "Iplox\\Bundles\\".$bdl."Bundle"; 
         }
     }
