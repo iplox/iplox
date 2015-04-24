@@ -29,6 +29,12 @@
             return $singleton->appDir;
         }
 
+        //Return the directory of the modules
+        public static function getModulesDir(){
+            $cfg = static::get('General');
+            return $cfg['modules_dir'];
+        }
+
         //Set the namespace of the application
         public static function setAppNamespace($ns) {
             $singleton = static::getSingleton();
@@ -53,16 +59,27 @@
 
         //Return a configuration array, if exists under the conventional configuration directories
         public static function get($cfgFile) {
+            $cfgSpecific = [];
+            $cfgBase = [];
+            $cfgDefault = [];
             $inst = static::getSingleton();
             if (!isset($cfgFile)) {
                 return null;
-            } else if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $inst->env . DIRECTORY_SEPARATOR . "$cfgFile" . "Config.php")) {
-                $cfg = @include $fName;
-            } else if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")) {
-                $cfg = @include $fName;
-            } else {
-                $cfg = @include $inst->env . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php";
             }
+
+            if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $inst->env . DIRECTORY_SEPARATOR . "$cfgFile" . "Config.php")) {
+                $cfgSpecific = @include $fName;
+            }
+
+            if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")) {
+                $cfgBase = @include $fName;
+            }
+
+            if( is_readable($fName =__DIR__.DIRECTORY_SEPARATOR."Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")){
+                $cfgDefault = @include $fName;
+            }
+
+            $cfg = array_merge($cfgDefault, $cfgBase, $cfgSpecific);
             return $cfg;
         }
 
