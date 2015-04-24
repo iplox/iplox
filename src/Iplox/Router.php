@@ -58,7 +58,7 @@ class Router {
                     $this->request = $req;
                     $this->route = $endpoint;
                     $this->requestMethod = $method;
-
+                    $this->regex = $this->regexRoute;
                     //Se resetean las rutas. Para que se puedan agregar nuevas si así se desea.
                     $this->resetRoutes($method);
                     //Se llama a la función de callback y se pasan los parámetros de la url solicitada
