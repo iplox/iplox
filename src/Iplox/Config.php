@@ -6,10 +6,13 @@
         protected static $singleton;
         protected $appDir;
         protected $appNamespace;
-        protected $env;
+        protected $env = 'Development';
+
+        // The constructor must be hidden in orther to implement the Factory pattern accurately.
+        protected function __construct(){}
 
         //Crea y/o retorna el singleton.
-        public static function getSingleton() {
+        protected static function getSingleton() {
             if(! isset(static::$singleton)){
                 static::$singleton = new static();
             }
@@ -51,6 +54,7 @@
             $singleton = static::getSingleton();
             $singleton->env = $env;
         }
+
         //Return the enviroment value.
         public static function getEnv() {
             $singleton = static::getSingleton();
@@ -59,28 +63,29 @@
 
         //Return a configuration array, if exists under the conventional configuration directories
         public static function get($cfgFile) {
+
             $cfgSpecific = [];
             $cfgBase = [];
             $cfgDefault = [];
+
             $inst = static::getSingleton();
+
             if (!isset($cfgFile)) {
-                return null;
+              return null;
             }
 
-            if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $inst->env . DIRECTORY_SEPARATOR . "$cfgFile" . "Config.php")) {
+            if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $inst->env . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")) {
                 $cfgSpecific = @include $fName;
             }
 
             if (is_readable($fName = $inst->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")) {
-                $cfgBase = @include $fName;
+              $cfgBase = @include $fName;
             }
 
             if( is_readable($fName =__DIR__.DIRECTORY_SEPARATOR."Config" . DIRECTORY_SEPARATOR . $cfgFile . "Config.php")){
                 $cfgDefault = @include $fName;
             }
-
             $cfg = array_merge($cfgDefault, $cfgBase, $cfgSpecific);
             return $cfg;
         }
-
     }
