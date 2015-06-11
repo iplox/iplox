@@ -45,6 +45,8 @@
         public static function init($req = null, $appDir = null, $appNamespace = null, $autoRun = true) {
             $inst = static::getSingleton();
             $r = $inst->router;
+            //Reflection Class
+            $rc = new \ReflectionClass(\get_called_class());
 
             //Config of the Application Dir.
             if(isset($appDir)){
@@ -95,8 +97,6 @@
 
 
             /**** Configurations ****/
-            //Reflection Class
-            $rc = new \ReflectionClass(\get_called_class());
 
             //Setup of all bundles.
             $bundles = Cfg::get('Bundles');
