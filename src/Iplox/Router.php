@@ -3,7 +3,7 @@
 namespace Iplox;
 
 class Router {
-    public $routes;
+    protected $routes;
 
     protected $route;
     protected $regexRoute;
@@ -125,28 +125,28 @@ class Router {
                 return false;
             }
 
-            // Cada $rs se transformará en una RegExp ($rg) que luego se integrará al RegExp final que determinará si el route es el correcto.
-            if(preg_match('/:\w*/', $rs) > 0){
+            //Match when found :value pattern
+            else if(preg_match('/:\w*/', $rs) > 0){
                 $regexRoute .= preg_replace(
                     ['/:\w*/', '/\)\?/', '/\)\)/', '/\(\(/'],
                     ['('.$pathSeparator.'[^\/]+'.')', ')?', ')', '('],
                     $rs);
-            } else if(preg_match('/\*\w*/', $rs) > 0){
+            }
+            //Match when found *value pattern
+            else if(preg_match('/\*\w*/', $rs) > 0){
                 $regexRoute .= preg_replace(
                     ['/\*\w*/', '/\)\?/','/\(\(/', '/\)\)/'],
                     ['(.+)', ')?','(',')'],
                     $rs);
-            } else {
+            }
+            //Match when not found any of the above pattern put the curresponding string in the $pathSections array, if there is one.
+            else {
                 $regexRoute .= preg_replace(
                     ['/\w+/', '/\)\?/', '/\(\(/', '/\)\)/'],
                     [$pathSeparator.'\w+', ')?', '(', ')'],
                     $rs);
             }
             $pathSeparator = '\/';
-
-            if(array_key_exists($i, $pathSections)){
-                $resolvedPath .= $pathSections[$i].'/';
-            }
         }
         //The actual regular expression generated.
         $regexRoute = '/^'.$regexRoute.'/';

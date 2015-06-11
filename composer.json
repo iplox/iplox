@@ -21,7 +21,7 @@
       }
    },
    "suggest": {
-     "phpdocumentor/phpdocumentor2": "Allows documentation generation using in-code special comments.",
+     "phpdocumentor/phpdocumentor": "Allows documentation generation using in-code special comments.",
      "phing/phing": "The PHP build automation tool"
    }
 }
