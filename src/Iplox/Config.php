@@ -6,25 +6,23 @@
 
         // Array of key => values of all configurations store in memory.
         protected $keyVals;
-        // Used when called the method getSet for caching configs arrays.
-        protected $setConfig;
+        // Used when the method getSet is called for caching configs arrays.
+        protected $cacheConfig;
         // List of known properties. Useful for speeding up some dynamic properties retreaving.
         protected $knownConfigs;
 
         // Constructor method.
         public function __construct(Array $keyVals = []){
-            $this->keyVals['General'] = $keyVals;
-            $this->setConfig = [];
+
+            //This are the valid config options in the diferents sets.
             $this->knownConfigs = [
                 'General' => [
-                    'appDir',
-                    'moduleDir',
-                    'modelsDir',
-                    'controllersDir',
-                    'viewsDir',
-                    'bundlesDir',
+                    'env',
+                    'directory',
                     'namespace',
-                    'env'
+                    'modulesDir',
+                    'bundlesDir',
+                    'modules'
                 ],
                 'Db' => [
                     'provider',
@@ -34,13 +32,22 @@
                     'password'
                 ]
             ];
+
+            //No config files has been loaded.
+            $this->cacheConfig = [];
+
+            // Load the default values from the general config file then combine them with the provided.
+            $this->keyVals['General'] = array_merge(
+                @include __DIR__.'/Config/GeneralConfig.php',
+                $keyVals
+            );
         }
 
         /*
          *  Method for capturing dynamic values.
          */
         public function __get($name){
-            if(array_key_exists($name, $this->knownConfigs['General'])){
+            if(in_array($name, $this->knownConfigs['General'])){
                 return $this->get($name);
             }
         }
@@ -51,7 +58,7 @@
          */
         public function __set($name, $value){
             if(in_array($name, $this->knownConfigs['General'])){
-                $this->keyVals['General'] = $value;
+                $this->keyVals['General'][$name] = $value;
             }
         }
 
@@ -65,19 +72,19 @@
             }
 
             // If the setName config are already cached there is no need to load from filesystem again.
-            if(array_key_exists($setName, $this->setConfig)){
-                return $this->setConfig[$setName];
+            if(array_key_exists($setName, $this->cacheConfig)){
+                return $this->cacheConfig[$setName];
             }
 
             $cfgSpecific = [];
             $cfgBase = [];
             $cfgDefault = [];
 
-            if (is_readable($fName = $this->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $this->env . DIRECTORY_SEPARATOR . $setName . "Config.php")) {
+            if (is_readable($fName = $this->directory . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $this->get('env') . DIRECTORY_SEPARATOR . $setName . "Config.php")) {
                 $cfgSpecific = @include $fName;
             }
 
-            if (is_readable($fName = $this->appDir . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $setName . "Config.php")) {
+            if (is_readable($fName = $this->directory . DIRECTORY_SEPARATOR . "Config" . DIRECTORY_SEPARATOR . $setName . "Config.php")) {
               $cfgBase = @include $fName;
             }
 
@@ -89,7 +96,7 @@
             $cfg = array_merge($cfgDefault, $cfgBase, $cfgSpecific);
 
             // Cache the $setName
-            $this->setConfig[$setName] = $cfg;
+            $this->cacheConfig[$setName] = $cfg;
 
             return $cfg;
         }
@@ -102,7 +109,7 @@
         */
         public function get($key, $setName = 'General')
         {            
-            if(! is_string($key) && !is_array($key)){
+            if(! (is_string($key) || is_array($key))){
                 throw new \Exception("Expected an string or array as first argument.");
             } else if(is_string($key)){
                 if(array_key_exists($key, $this->keyVals[$setName])){
@@ -113,7 +120,6 @@
             } else if(is_array($key)){
                 $matched = [];
                 foreach ($key as $k) {
-                    echo gettype($this->keyVals[$setName]);
                     if(array_key_exists($k, $this->keyVals[$setName])){
                         $matched[$k] = $this->keyVals[$setName][$k];
                     } else {

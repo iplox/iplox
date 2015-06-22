@@ -16,8 +16,7 @@ class ConfigTest extends PHPUnit_Framework_TestCase {
     	$this->assertTrue($exp == $c->get(['c', 'd']), "It isn't storing or retrieving arrays.");
     	
     	$c->env = 'Staging';
-        $c->get('env');
-        // $this->assertEquals('Staging', $c->get('env'), "It isn't storing using dynamic properties.");
+		$this->assertEquals('Staging', $c->get('env'), "It isn't storing using dynamic properties.");
     }
 
     public function testIfReadingSet() {

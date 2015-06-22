@@ -1,9 +1,13 @@
 <?php
 
 return [
-  'models_dir' => 'Models',
-  'controllers_dir' => 'Controllers',
-  'views_dir' => 'Views',
-  'bundles_dir' => 'Bundles',
-  'modules_dir' => 'Modules',
+  'bundlesDir' => 'Bundles',
+  'env' => 'Development',
+  'directory' => '',
+  'namespace' => '',
+
+  // Submodules options
+  'modules' => [],
+  'modulesDir' => 'Modules',
+  'modulesClassName' => 'Module',
 ];
