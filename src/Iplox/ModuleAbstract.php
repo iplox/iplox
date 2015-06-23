@@ -5,7 +5,6 @@ namespace Iplox;
 abstract class ModuleAbstract {
 	
 	protected $config;
-	protected $submodules;
 	protected $router;
 
 	public function __construct(Config $cfg){
@@ -19,7 +18,7 @@ abstract class ModuleAbstract {
 		} else if($prop === 'router') {
 			return $this->router;
 		} else if($prop === 'modules'){
-			return $this->submodules;
+			return $this->config->modules;
 		}
 	}
 
