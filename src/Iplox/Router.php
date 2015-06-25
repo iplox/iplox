@@ -143,7 +143,7 @@ class Router {
             else {
                 $regexRoute .= preg_replace(
                     ['/\w+/', '/\)\?/', '/\(\(/', '/\)\)/'],
-                    [$pathSeparator.'\w+', ')?', '(', ')'],
+                    [$pathSeparator.$rs, ')?', '(', ')'],
                     $rs);
             }
             $pathSeparator = '\/';

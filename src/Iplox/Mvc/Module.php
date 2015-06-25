@@ -75,7 +75,7 @@ class Module extends BasicModule
             ucwords($controller) . $this->config->controllerSuffix;
 
         if(class_exists($controllerName)) {
-            $inst = new $controllerName();
+            $inst = new $controllerName($this->config);
             if(method_exists($inst, $method . ucwords($this->router->requestMethod))) {
                 call_user_func_array(array($inst, $method . ucwords($this->router->requestMethod)), preg_split('/\/{1}/', $params));
             } else if(method_exists($inst, $method . ucwords($this->config->alternativeMethodSuffix))){
