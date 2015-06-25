@@ -6,23 +6,23 @@ use Composer\Autoload\ClassLoader;
 
 class BasicModule extends ModuleAbstract {
 
+    protected $router;
+
     public function __construct($cfg)
     {
-        parent::__construct($cfg);
-
         //Add options for a General set.
-        $this->config->addKnownOptions([
+        $cfg->addKnownOptions([
             // Submodules options
             'modules' => [],
             'modulesDir' => 'Modules',
-            'modulesClassName' => 'Module',
+            'moduleClassName' => 'Iplox\\BasicModule',
 
             // Reserved options for "future" use
             'bundlesDir' => 'Bundles',
         ]);
 
         //Add options for a Db (database) set.
-        $this->config->addKnownOptions('Db', [
+        $cfg->addKnownOptions('Db', [
             'provider' => 'mysql',
             'username' => 'root',
             'password' => '',
@@ -31,16 +31,31 @@ class BasicModule extends ModuleAbstract {
             'dbname' => 'IploxApp',
         ]);
 
+        parent::__construct($cfg);
+
+        $this->router = new Router();
+
         // Load the module routes.
         $this->addModuleRoutes();
     }
 
+    public function __get($name)
+    {
+        if($name === 'router'){
+            return $this->router;
+        }
+        return parent::__get($name);
+
+    }
     // If it has submodules, add the routes.
     protected function addModuleRoutes()
     {
+        if(empty($modules = $this->config->modules)){
+            return 0;
+        }
         $modCfg = [];
         $routes = [];
-        foreach($this->config->modules as $m){
+        foreach($modules as $m){
             $modCfg[$m['route']] = $m;
             $routes[$m['route']] = function () use (&$modCfg) {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
@@ -52,7 +67,6 @@ class BasicModule extends ModuleAbstract {
     //Initialize the module
     public function init($uri)
     {
-        // Let's do it!
         $this->router->check($uri);
     }
 
@@ -66,28 +80,28 @@ class BasicModule extends ModuleAbstract {
         $regExpReq = "/\/?".str_replace('/', '\/', $subModCfg['route'])."\/?/";
         $reqUri = preg_replace($regExpReq, '/', $this->router->request);
 
-        if(array_key_exists('directory', $subModCfg) && array_key_exists('namespace', $subModCfg)) {
+        $cfg = new Config($subModCfg);
+        $ns = $cfg->get('namespace');
+
+        // If this class can't be loaded, enable the autoload using the composer class loader.
+        if(! empty($ns)){
             $loader = new ClassLoader();
-            $loader->add($subModCfg['namespace'], $subModCfg['directory']);
+            // Full directory of the module to be initialized.
+            $dir = $this->config->get('directory') . DIRECTORY_SEPARATOR .
+                $this->config->get('modulesDir') . DIRECTORY_SEPARATOR .  $cfg->get('directory');
+            $loader->add($ns, $dir);
             $loader->register();
             $loader->setUseIncludePath(true);
-
-            if(array_key_exists('className', $subModCfg)){
-                $mClass = $subModCfg['namespace'].'\\'.$subModCfg['className'];
-            } else {
-                $mClass = $subModCfg['namespace'].'\\'.$this->config->modulesClassName;
-            }
-
-            $cfg = new Config(
-                $subModCfg['directory'],
-                array_key_exists('namespace', $subModCfg) ? $subModCfg['namespace'] : '',
-                array_key_exists('options', $subModCfg) ? $subModCfg['options'] : [],
-                $this->config->env
-            );
-            $mod = new $mClass($cfg);
-            $mod->init($reqUri);
-        } else {
-            throw new \Exception("The 'namespace' and/or 'directory' configuration options ".$subModCfg['name']." where not found for the ".$subModCfg['name']." module.");
         }
+
+        if($cn = $cfg->get('moduleClassName')){
+            $mClass = $ns.'\\'.$cn;
+        } else {
+            // Use the default moduleClassName. See the top of this file.
+            $mClass = $this->config->get('moduleClassName');
+        }
+
+        $mod = new $mClass($cfg);
+        $mod->init($reqUri);
     }
 }

@@ -11,24 +11,15 @@ class Config
     // List of known properties. Useful for speeding up some dynamic properties retreaving.
     protected $knownOptions = [];
 
-    protected $directory;
-    protected $namespace;
-    protected $env;
-    protected $configDir;
+    // Array of directories where config files might exist.
+    protected $files = [];
 
     // Constructor method.
-    public function __construct($directory, $namespace = '', Array $options = [], $env = 'Development'){
-        $this->directory = $directory;
-        $this->namespace = $namespace;
-        $this->env = $env;
-
-        $this->configDir = $directory . DIRECTORY_SEPARATOR .
-            (empty($namespace) ? '' : (str_replace('\\', DIRECTORY_SEPARATOR, $namespace) . DIRECTORY_SEPARATOR)) .
-            "Config" . DIRECTORY_SEPARATOR;
+    public function __construct(Array $options = []){
 
         // Default configurations
-        $this->options["Default"] = $options;
-        $this->addKnownOptions("Default", []);
+        $this->options["default"] = $options;
+        $this->addKnownOptions("default", []);
     }
 
     /*
@@ -37,12 +28,6 @@ class Config
     public function __get($name){
         if($this->isKnownOption($name)){
             return $this->get($name);
-        } else if($name === 'namespace'){
-            return $this->namespace;
-        } else if($name === 'directory'){
-            return $this->directory;
-        } else if($name === 'env'){
-            return $this->env;
         }
         return null;
     }
@@ -52,9 +37,7 @@ class Config
      *  Method for setting options magically.
      */
     public function __set($name, $value){
-//        if($this->isKnownOption($name)){
-            $this->options["Default"][$name] = $value;
-//        }
+        $this->options["default"][$name] = $value;
     }
 
     /*
@@ -71,25 +54,8 @@ class Config
             return $this->cacheSets[$setName];
         }
 
-        if($setName === "Default"){
-            $prefix = '';
-        } else {
-            $prefix = $setName;
-        }
-
-        $cfgSpecific = [];
-        $cfgBase = [];
-
-        if (is_readable($fName = $this->configDir  . $this->env . DIRECTORY_SEPARATOR . $prefix . "Config.php")) {
-            $cfgSpecific = @include $fName;
-        }
-
-        if (is_readable($fName = $this->configDir . $prefix . "Config.php")) {
-            $cfgBase = @include $fName;
-        }
-
         // Merge all sources.
-        $cfg = array_merge($this->knownOptions[$setName], $cfgBase, $cfgSpecific);
+        $cfg = array_merge($this->knownOptions[$setName], $this->getOptionsFromFiles($setName));
 
         // Cache the set of options
         $this->cacheSets[$setName] = $cfg;
@@ -103,7 +69,7 @@ class Config
     *   @param string $setName optional Name of the setName.
     *   @return $mixed Whatever the value is.
     */
-    public function get($key, $setName = "Default")
+    public function get($key, $setName = "default")
     {
         if(! (is_string($key) || is_array($key))){
             throw new \Exception("Expected an string or array as first argument.");
@@ -115,7 +81,11 @@ class Config
                 }
                 return $v;
             } else {
-                return $this->getSet($setName)[$key];
+                $opts = $this->getSet($setName);
+                if(array_key_exists($key, $opts)){
+                    return $opts[$key];
+                }
+                return null;
             }
         } else if(is_array($key)){
             $matched = [];
@@ -128,7 +98,10 @@ class Config
                         $matched[$k] = $v;
                     }
                 } else {
-                    $matched[$k] = $this->getSet($setName)[$k];
+                    $opts = $this->getSet($setName);
+                    if(array_key_exists($k, $opts)){
+                        $matched[$k] = $opts[$k];
+                    }
                 }
             }
             return $matched;
@@ -136,15 +109,15 @@ class Config
     }
 
     /**
-    *   Set the value of a config. It accepts a setName, by default is "Default".
+    *   Set the value of a config. It accepts a setName, by default is "default".
     *   @param string $key Name of the config.
     *   @param string $val optional null The value of the config.
     *   @param string $setName optional Name of the setName.
     */
-    public function set($key, $val = null, $setName = "Default")
+    public function set($key, $val = null, $setName = "default")
     {
         if(! is_string($key) && !is_array($key)){
-            throw new \Exception("Expected an string or array as first argument.");
+            throw new \Exception("Expected a string or an array as first argument.");
         } else if(is_string($key)){
             $this->options[$setName][$key] = $val;
         } else if(is_array($key)){
@@ -157,7 +130,7 @@ class Config
     public function addKnownOptions($setName, Array $options = null){
         if(is_array($setName)){
             $options = $setName;
-            $setName = "Default";
+            $setName = "default";
         }
         else if(! array_key_exists($setName, $this->knownOptions)){
             $this->knownOptions[$setName] = [];
@@ -166,8 +139,45 @@ class Config
 	}
 
     // Check if an config option is valid for an specific config set.
-    public function isKnownOption($option, $setName = "Default")
+    public function isKnownOption($option, $setName = "default")
     {
         return array_key_exists($option, $this->knownOptions[$setName]);
+    }
+
+    // Add configuration directories
+    public function addFile($file, $setName = "default")
+    {
+        if(! array_key_exists($setName, $this->files)){
+            $this->files[$setName] = [];
+        }
+        array_push($this->files[$setName], $file);
+    }
+
+    // Extract options from all configuration files
+    public function getOptionsFromFiles($setName)
+    {
+        $allOpts = [];
+        if(! array_key_exists($setName, $this->files)) {
+            return $allOpts;
+        }
+        foreach($this->files[$setName] as $f){
+            if(is_callable($f)){
+                $f = call_user_func($f, $setName);
+            }
+            if (is_readable($f)){
+                $opts = @include $f;
+                $allOpts = array_merge($allOpts, $opts);
+            }
+        }
+        return $allOpts;
+    }
+
+    public function refreshCache($setName = "default")
+    {
+        $optsFromFiles = $this->getOptionsFromFiles($setName);
+        $this->cacheSets[$setName] = array_merge(
+            $this->knownOptions[$setName],
+            $optsFromFiles
+        );
     }
 }

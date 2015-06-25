@@ -5,20 +5,46 @@ namespace Iplox;
 abstract class ModuleAbstract {
 	
 	protected $config;
-	protected $router;
 
 	public function __construct(Config $cfg){
+		$cfg->addKnownOptions([
+			'name' => 'noname',
+			'namespace' => '',
+			'directory' => '',
+			'configDir' => 'configs',
+			'env' => 'development',
+			'configFilesSuffix' => 'Config'
+		]);
+
+		// In submodules this is usually necessary.
+		$cfg->refreshCache();
+
+		list($dir, $configDir, $suffix, $env) =
+			array_values($cfg->get(['directory', 'configDir', 'configFilesSuffix', 'env']));
+
+		// Absolute path to the config directory
+		$configDir = $dir . DIRECTORY_SEPARATOR . $configDir. DIRECTORY_SEPARATOR;
+
+		// General config file for the $optionSet.
+		$cfg->addFile(function($setName) use (&$cfg, &$configDir, &$suffix){
+			return $configDir . $setName . $suffix . '.php';
+		});
+
+		// General config file for the $optionSet for the current enviroment.
+		$cfg->addFile(function($setName) use (&$cfg, &$configDir, &$suffix, &$env){
+			return $configDir . $env . DIRECTORY_SEPARATOR . $setName . $suffix . '.php';
+		});
+
+		// The 'Default' optionSet was already cached.
+		// So, we need to refresh the object so it loads the options from the files.
+		$cfg->refreshCache();
+
 		$this->config = $cfg;
-		$this->router = new Router();
 	}
  
-	public function __get($prop){
-		if($prop === 'config'){
+	public function __get($name){
+		if($name === 'config'){
 			return $this->config;
-		} else if($prop === 'router') {
-			return $this->router;
-		} else if($prop === 'modules'){
-			return $this->config->modules;
 		}
 	}
 

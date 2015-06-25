@@ -8,6 +8,9 @@ class Module extends BasicModule
 {
     public function __construct($cfg)
     {
+
+        parent::__construct($cfg);
+
         // Add the options related to this module.
         $cfg->addKnownOptions([
             'controllerNamespace' => 'Controllers',
@@ -19,10 +22,10 @@ class Module extends BasicModule
             'defaultGlobalHandler' => 'defaultGlobalHandler',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
+            'moduleClassName' => 'Iplox\\Mvc\\Module'
         ]);
 
-        parent::__construct($cfg);
-
+        $cfg->refreshCache();
 
         //Determine if any of this routes actually exists as an object
         $this->router->addFilters(array(
@@ -30,7 +33,7 @@ class Module extends BasicModule
                 $ns = $this->config->namespace . '\\' .
                     ucwords(preg_replace(['/^\//', '/\//'], ['', '\\'], $path)) .
                     $this->config->controllerNamespace . '\\';
-                $class = $ns . ucwords($name) . 'Controller';
+                $class = $ns . ucwords($name) . $this->config->controllerSuffix;
                 if (class_exists($class, TRUE)){
                     return true;
                 }
