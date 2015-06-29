@@ -1,37 +1,8 @@
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: jrszapata
- * Date: 3/19/15
- * Time: 10:13 PM
- */
+
 use Iplox\Router;
 
 class RouterTest extends PHPUnit_Framework_TestCase {
-
-    public function testIsGet(){
-        $r = new Router();
-        $_SERVER['REQUEST_METHOD']='GET';
-        $this->assertTrue($r->isGet());
-    }
-
-    public function testIsPost(){
-        $r = new Router();
-        $_SERVER['REQUEST_METHOD']='POST';
-        $this->assertTrue($r->isPost());
-    }
-
-    public function testIsDelete() {
-        $r = new Router();
-        $_SERVER['REQUEST_METHOD'] = 'DELETE';
-        $this->assertTrue($r->isDelete());
-    }
-
-    public function testIsPut() {
-        $r = new Router();
-        $_SERVER['REQUEST_METHOD'] = 'PUT';
-        $this->assertTrue($r->isPut());
-    }
 
     public function testCheckRoute() {
         $r = new Router();
