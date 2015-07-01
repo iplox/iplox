@@ -4,7 +4,7 @@ namespace Iplox\Mvc;
 
 use Iplox\BasicModule;
 
-class Module extends BasicModule
+    class Module extends BasicModule
 {
     public function __construct($cfg)
     {

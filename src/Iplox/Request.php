@@ -11,14 +11,14 @@ namespace Iplox;
 
 class Request
 {
-    protected $current;
+    protected static $current;
 
     public function __construct ()
     {
 
     }
 
-    public function getCurrent()
+    public static function getCurrent()
     {
         if(null === static::$current){
             static::$current = new Request();
@@ -27,6 +27,12 @@ class Request
         return static::$current;
     }
 
+    public function __get($name)
+    {
+        if($name === 'method'){
+            return $_SERVER['REQUEST_METHOD'];
+        }
+    }
 
     /*****  HTTP Method Verification *****/
     //Devuelve true si el método solicitado es GET

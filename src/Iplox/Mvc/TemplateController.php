@@ -2,6 +2,7 @@
 
 namespace Iplox\Mvc;
 use \Smarty;
+use Iplox\Controller;
 
 class TemplateController extends Controller {
     protected $view;
@@ -32,12 +33,9 @@ class TemplateController extends Controller {
         $this->assign = [];
     }
 
-    public function show($data=null, $tpl=null){
+    public function show($tpl, $data=[]){
         if(! isset($this->vars)){
             $this->vars = [];
-        }
-        if(! isset($data)){
-            $data = [];
         }
 
         $viewData = array_merge_recursive($this->vars, $data);
