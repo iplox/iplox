@@ -33,7 +33,7 @@ class Router {
             $method = $method ? $method : $this->requestMethod;
         }
         else {
-            $req = $req ? preg_replace('/\/$/', '', $req) : $_SERVER['REQUEST_URI'];
+            $req = $req ? preg_replace(['/^\/*/', '/\/$/'], ['/', ''], $req) : $_SERVER['REQUEST_URI'];
             $method = $method ? $method : $_SERVER['REQUEST_METHOD'];
         }
 
