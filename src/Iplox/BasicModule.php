@@ -15,7 +15,7 @@ class BasicModule extends ModuleAbstract {
             // Submodules options
             'modules' => [],
             'modulesDir' => 'Modules',
-            'moduleClassName' => 'Iplox\\BasicModule',
+            'moduleClassName' => __CLASS__,
 
             // Reserved options for "future" use
             'bundlesDir' => 'Bundles',
@@ -85,10 +85,15 @@ class BasicModule extends ModuleAbstract {
 
         // If this class can't be loaded, enable the autoload using the composer class loader.
         if(! empty($ns)){
-            $loader = new ClassLoader();
             // Full directory of the module to be initialized.
             $dir = $this->config->get('directory') . DIRECTORY_SEPARATOR .
                 $this->config->get('modulesDir') . DIRECTORY_SEPARATOR .  $cfg->get('directory');
+
+            // Override the current module 'directory' value
+            $cfg->set('directory', $dir);
+
+            // Add the namespacec to the  composer ClassLoader
+            $loader = new ClassLoader();
             $loader->add($ns, $dir);
             $loader->register();
             $loader->setUseIncludePath(true);
