@@ -19,6 +19,8 @@ class Config
 
         // Default configurations
         $this->options["default"] = $options;
+        // * means dynamic files that apply to any $optionSet.
+        $this->files['*'] = [];
         $this->addKnownOptions("default", []);
     }
 
@@ -74,7 +76,7 @@ class Config
         if(! (is_string($key) || is_array($key))){
             throw new \Exception("Expected an string or array as first argument.");
         } else if(is_string($key)){
-            if(array_key_exists($key, $this->options[$setName])){
+            if(array_key_exists($setName, $this->options) && array_key_exists($key, $this->options[$setName])){
                 $v = $this->options[$setName][$key];
                 if($v instanceof \Closure){
                     return call_user_func([$this, $v]);
@@ -157,14 +159,18 @@ class Config
     public function getOptionsFromFiles($setName)
     {
         $allOpts = [];
-        if(! array_key_exists($setName, $this->files)) {
-            return $allOpts;
+        $files = $this->files['*'];
+        if(array_key_exists($setName, $this->files)) {
+            foreach($this->files[$setName] as $f){
+                array_push($files, $f);
+            }
         }
-        foreach($this->files[$setName] as $f){
-            if(is_callable($f)){
+
+        foreach($files as $f) {
+            if(is_callable($f)) {
                 $f = call_user_func($f, $setName);
             }
-            if (is_readable($f)){
+            if (is_readable($f)) {
                 $opts = @include $f;
                 $allOpts = array_merge($allOpts, $opts);
             }
