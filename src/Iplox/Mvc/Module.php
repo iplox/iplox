@@ -22,7 +22,7 @@ use Iplox\BasicModule;
             'defaultGlobalHandler' => 'defaultGlobalHandler',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
-            'moduleClassName' => 'Iplox\\Mvc\\Module'
+            'moduleClassName' => __CLASS__
         ]);
 
         $cfg->refreshCache();

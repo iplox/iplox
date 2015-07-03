@@ -3,7 +3,6 @@
 namespace Iplox\Restful;
 use Iplox\Controller;
 use Iplox\Request;
-use Iplox\Router;
 
 class ResourceController extends Controller
 {
@@ -24,7 +23,7 @@ class ResourceController extends Controller
         $this->router->addFilters([
             ':num' => function($val){
                 return is_numeric($val) ? true : false;
-            }
+            },
         ]);
 
         $req = Request::getCurrent();
@@ -32,7 +31,7 @@ class ResourceController extends Controller
 
         // Filters for the Restful functionality
         $this->router->appendRoutes([
-            '/:num/:relation' =>  array($this, '__routeToRelatedHandler'),
+            '/:num/:resource' =>  array($this, '__routeToRelatedHandler'),
             '/:num' =>  array($this, $handler.'One'),
             '/:str' => array($this, '__routeToVerbHandler'),
             '/' =>  array($this, $handler),
@@ -41,30 +40,32 @@ class ResourceController extends Controller
         $this->router->check($uri);
     }
 
-
     public function __routeToVerbHandler ($verb)
     {
-        $verbFunc = $verb.$this->config->get('alternativeMethodSuffix');
-        $prefix = $this->handlerForMethods[strtolower(Request::getCurrent()->method)];
-        if(is_callable($verbFunc)) {
-            return call_user_func([$this, $verbFunc]);
-        } else if(is_callable([$this, $prefix])){
-            return call_user_func([$this, $prefix]);
-        } else {
-            return false;
+        $verbFunc = [$this, $verb . ucwords(Request::getCurrent()->method)];
+        if(is_callable($verbFunc)){
+            return call_user_func($verbFunc);
         }
+
+        $verbFunc[1] = $verb . $this->config->get('alternativeMethodSuffix');
+        if(is_callable($verbFunc)){
+            return call_user_func($verbFunc);
+        }
+
+        return false;
     }
 
     public function __routeToRelatedHandler($identifier, $related)
     {
-        $prefix = $this->handlerForMethods[Request::getCurrent()->method];
+        $prefix = $this->handlerForMethods[strtolower(Request::getCurrent()->method)];
         $handler = [$this, $prefix.$related];
         if(is_callable($handler)){
             call_user_func($handler,  $identifier);
         }
     }
 
-    public function ok($data, $status = HttpStatus::OK) {
+    public function ok($data, $status = HttpStatus::OK)
+    {
         if(!empty($data)){
             header('Content-type: application/json');
             echo json_encode($data);
@@ -72,46 +73,6 @@ class ResourceController extends Controller
     }
 
     public function error($error, $status) {
-
-    }
-
-    public function create()
-    {
-
-    }
-
-    public function get()
-    {
-        return [];
-    }
-
-    public function getOne()
-    {
-
-    }
-
-    public function update()
-    {
-
-    }
-
-    public function updateOne()
-    {
-
-    }
-
-    public function delete()
-    {
-
-    }
-
-    public function deleteOne()
-    {
-
-    }
-
-    public function doInAnyOtherCase()
-    {
 
     }
 }

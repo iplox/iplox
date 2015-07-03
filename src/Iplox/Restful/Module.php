@@ -11,7 +11,7 @@ class Module extends BasicModule
 
         parent::__construct($cfg);
 
-        // Add the options related to this module.
+        // Add the general options.
         $cfg->addKnownOptions([
             'controllerNamespace' => 'Controllers',
             'controllerSuffix' => 'Controller',
@@ -22,14 +22,26 @@ class Module extends BasicModule
             'defaultGlobalHandler' => 'defaultGlobalHandler',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
-            'moduleClassName' => 'Iplox\\Api\\Restful\\Module'
+            'moduleClassName' => __CLASS__
+        ]);
+
+        // Options for mapping resources to controllers.
+        $cfg->addKnownOptions('resourcesMapping', [
+           'index' => 'Index'
         ]);
 
         $cfg->refreshCache();
 
+        $this->router->addFilters([
+            ':resource' => function($val) {
+                $resources = $this->config->getSet('resourcesMapping');
+                return is_array($resources) && array_key_exists($val, $resources) ? true : false;
+            },
+        ]);
+
         // Filters for the Restful functionality
         $this->router->appendRoutes([
-            '/:resource/(*uriExtra)?' =>  function($resourceName, $uriExtra = null) {
+            '/:resource/(*uriExtra)?' =>  function($resourceName, $uriExtra = '/') {
                 if($class = $this->getResourceController($resourceName)){
                     return new $class($this->config, $uriExtra);
                 }
@@ -49,9 +61,10 @@ class Module extends BasicModule
 
     public function getResourceController($resourceName)
     {
+        $rn = $this->config->get($resourceName, 'resourcesMapping');
         $class = $this->config->namespace . '\\' .
             $this->config->controllerNamespace . '\\' .
-            ucwords($resourceName) . $this->config->controllerSuffix;
+            ucwords($rn) . $this->config->controllerSuffix;
         if(class_exists($class)){
             return $class;
         }
