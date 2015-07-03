@@ -28,12 +28,12 @@ abstract class ModuleAbstract {
 		// General config file for the $optionSet.
 		$cfg->addFile(function($setName) use (&$cfg, &$configDir, &$suffix){
 			return $configDir . $setName . $suffix . '.php';
-		});
+		}, '*');
 
-		// General config file for the $optionSet for the current enviroment.
+		// Config file for the $optionSet for the current enviroment.
 		$cfg->addFile(function($setName) use (&$cfg, &$configDir, &$suffix, &$env){
 			return $configDir . $env . DIRECTORY_SEPARATOR . $setName . $suffix . '.php';
-		});
+		}, '*');
 
 		// The 'Default' optionSet was already cached.
 		// So, we need to refresh the object so it loads the options from the files.
