@@ -62,8 +62,7 @@ class Router {
                     //Se resetean las rutas. Para que se puedan agregar nuevas si así se desea.
                     $this->resetRoutes($method);
                     //Se llama a la función de callback y se pasan los parámetros de la url solicitada
-                    call_user_func_array($callback, $matches);
-                    return true;
+                    return call_user_func_array($callback, $matches);
                 } else if(is_string($callback) || is_array($callback)) {
                     // What if $callback is a string? It means, it's a request.
                     if(is_string($callback)){

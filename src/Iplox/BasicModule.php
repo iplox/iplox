@@ -12,13 +12,13 @@ class BasicModule extends ModuleAbstract {
     {
         //Add options for a General set.
         $cfg->addKnownOptions([
+            // General options.
+            'defaultContentType' => 'application/json',
+
             // Submodules options
             'modules' => [],
             'modulesDir' => 'Modules',
             'moduleClassName' => __CLASS__,
-
-            // Reserved options for "future" use
-            'bundlesDir' => 'Bundles',
         ]);
 
         //Add options for a Db (database) set.
@@ -67,7 +67,7 @@ class BasicModule extends ModuleAbstract {
     //Initialize the module
     public function init($uri)
     {
-        $this->router->check($uri);
+        return $this->router->check($uri);
     }
 
 

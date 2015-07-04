@@ -22,7 +22,8 @@ class Module extends BasicModule
             'defaultGlobalHandler' => 'defaultGlobalHandler',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
-            'moduleClassName' => __CLASS__
+            'moduleClassName' => __CLASS__,
+            'defaultContentType' => 'application/json'
         ]);
 
         // Options for mapping resources to controllers.
@@ -43,7 +44,8 @@ class Module extends BasicModule
         $this->router->appendRoutes([
             '/:resource/(*uriExtra)?' =>  function($resourceName, $uriExtra = '/') {
                 if($class = $this->getResourceController($resourceName)){
-                    return new $class($this->config, $uriExtra);
+                    $c = new $class($this->config, $uriExtra);
+                    return $c->response;
                 }
                 return false;
             },
@@ -56,7 +58,8 @@ class Module extends BasicModule
             $uri = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
             $uri = empty($uri) ? '/' : $uri;
         }
-        $this->router->check($uri);
+        $response = $this->router->check($uri);
+        $response->end();
     }
 
     public function getResourceController($resourceName)

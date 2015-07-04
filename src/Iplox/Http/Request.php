@@ -1,22 +1,11 @@
 <?php
-/**
- * Created by IntelliJ IDEA.
- * User: jrszapata
- * Date: 6/29/15
- * Time: 3:31 PM
- */
 
-namespace Iplox;
+namespace Iplox\Http;
 
 
 class Request
 {
     protected static $current;
-
-    public function __construct ()
-    {
-
-    }
 
     public static function getCurrent()
     {

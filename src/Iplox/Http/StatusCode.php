@@ -1,8 +1,8 @@
 <?php
 
-namespace Iplox;
+namespace Iplox\Http;
 
-class HttpStatus {
+class StatusCode {
     const OK = 200;
     const CREATED = 201;
     const BAD_REQUEST = 401;

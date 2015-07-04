@@ -2,7 +2,8 @@
 
 namespace Iplox\Restful;
 use Iplox\Controller;
-use Iplox\Request;
+use Iplox\Http\Request;
+use Iplox\Http\Response;
 
 class ResourceController extends Controller
 {
@@ -37,7 +38,12 @@ class ResourceController extends Controller
             '/' =>  array($this, $handler),
         ]);
 
-        $this->router->check($uri);
+        $data = $this->router->check($uri);
+        if($data instanceof Response){
+            $this->response = $data;
+        } else {
+            $this->response = new Response(empty($data) ? [] : $data, $this->config->get('defaultContentType'));
+        }
     }
 
     public function __routeToVerbHandler ($verb)
@@ -60,19 +66,8 @@ class ResourceController extends Controller
         $prefix = $this->handlerForMethods[strtolower(Request::getCurrent()->method)];
         $handler = [$this, $prefix.$related];
         if(is_callable($handler)){
-            call_user_func($handler,  $identifier);
+            return call_user_func($handler,  $identifier);
         }
-    }
-
-    public function ok($data, $status = HttpStatus::OK)
-    {
-        if(!empty($data)){
-            header('Content-type: application/json');
-            echo json_encode($data);
-        }
-    }
-
-    public function error($error, $status) {
-
+        return [];
     }
 }
