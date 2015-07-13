@@ -54,7 +54,8 @@ class BasicModule extends ModuleAbstract {
     // If it has submodules, add the routes.
     protected function addModuleRoutes()
     {
-        if(empty($modules = $this->config->modules)){
+        $modules = $this->config->modules;
+        if(empty($modules)){
             return 0;
         }
         $modCfg = [];
