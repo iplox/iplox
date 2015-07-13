@@ -7,6 +7,7 @@ use Composer\Autoload\ClassLoader;
 class BasicModule extends ModuleAbstract {
 
     protected $router;
+    protected $modules;
 
     public function __construct($cfg)
     {
@@ -19,6 +20,7 @@ class BasicModule extends ModuleAbstract {
             'modules' => [],
             'modulesDir' => 'modules',
             'moduleClassName' => __CLASS__,
+            'autoload' => false
         ]);
 
         //Add options for a Db (database) set.
@@ -35,6 +37,7 @@ class BasicModule extends ModuleAbstract {
         parent::__construct($cfg);
 
         $this->router = new Router();
+        $this->modules = [];
 
         // Load the module routes.
         $this->addModuleRoutes();
@@ -56,32 +59,22 @@ class BasicModule extends ModuleAbstract {
         }
         $modCfg = [];
         $routes = [];
+        $id = 0;
         foreach($modules as $m){
+            $m['id'] = $id++;
             $modCfg[$m['route']] = $m;
             $routes[$m['route']] = function () use (&$modCfg) {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
             };
+
+            $this->loadModule($m, $id);
         }
         $this->router->appendRoutes($routes);
     }
 
-    //Initialize the module
-    public function init($uri)
+    protected function loadModule($modCfgArray, $modId)
     {
-        return $this->router->check($uri);
-    }
-
-
-    /**
-     * Call the module.
-     */
-    public function callModule($subModCfg)
-    {
-        // The next request wont have full original request, only the remaining part.
-        $regExpReq = "/\/?".str_replace('/', '\/', $subModCfg['route'])."\/?/";
-        $reqUri = preg_replace($regExpReq, '/', $this->router->request);
-
-        $cfg = new Config($subModCfg);
+        $cfg = new Config($modCfgArray);
         $ns = $cfg->get('namespace');
 
         // If this class can't be loaded, enable the autoload using the composer class loader.
@@ -108,6 +101,32 @@ class BasicModule extends ModuleAbstract {
         }
 
         $mod = new $mClass($cfg);
+        return $this->modules[$modId] =  $mod;
+    }
+
+    //Initialize the module
+    public function init($uri)
+    {
+        return $this->router->check($uri);
+    }
+
+
+    /**
+     * Call the module.
+     */
+    public function callModule($modCfgArray)
+    {
+        // The next request wont have full original request, only the remaining part.
+        $regExpReq = "/\/?".str_replace('/', '\/', $modCfgArray['route'])."\/?/";
+        $reqUri = preg_replace($regExpReq, '/', $this->router->request);
+
+
+        if (array_key_exists($modCfgArray['id'], $this->modules)) {
+            $mod = $this->modules[$modCfgArray['id']];
+        } else {
+            $mod = $this->loadModule($modCfgArray, $modCfgArray['id']);
+        }
+
         $mod->init($reqUri);
     }
 }
