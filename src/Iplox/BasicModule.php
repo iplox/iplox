@@ -17,17 +17,18 @@ class BasicModule extends ModuleAbstract {
 
             // Submodules options
             'modules' => [],
-            'modulesDir' => 'Modules',
+            'modulesDir' => 'modules',
             'moduleClassName' => __CLASS__,
         ]);
 
         //Add options for a Db (database) set.
-        $cfg->addKnownOptions('Db', [
-            'provider' => 'mysql',
+        $cfg->addKnownOptions('db', [
+            'driver' => 'pdo_mysql',
             'username' => 'root',
             'password' => '',
             'hostname' => 'localhost',
             'port' => '3386',
+            'charset' => 'utf8',
             'dbname' => 'IploxApp',
         ]);
 
