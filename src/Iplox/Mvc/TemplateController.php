@@ -20,6 +20,7 @@ class TemplateController extends Controller {
             'cacheDir' => $baseDir .'cache',
             'setCompileDir' => $baseDir .'compiles',
         ]);
+
         // Load the entire smarty optionSet 
         $smartyCfg = $cfg->getSet('smarty');
 

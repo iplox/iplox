@@ -8,7 +8,6 @@ use Iplox\BasicModule;
 {
     public function __construct($cfg)
     {
-
         parent::__construct($cfg);
 
         // Add the options related to this module.
@@ -16,6 +15,7 @@ use Iplox\BasicModule;
             'controllerNamespace' => 'Controllers',
             'controllerSuffix' => 'Controller',
             'alternativeMethodSuffix' => 'Action',
+            'viewsDir' => 'views', 
             'modelSuffix' => 'Model',
             'entitySuffix' => 'Entity',
             'notFoundHandler'=> 'notFoundHandler',
