@@ -8,8 +8,10 @@ class BasicModule extends ModuleAbstract {
 
     protected $router;
     protected $modules;
+    protected $modulesToLoad;
+    protected $injections;
 
-    public function __construct($cfg)
+    public function __construct(Config $cfg, $injections)
     {
         //Add options for a General set.
         $cfg->addKnownOptions([
@@ -38,6 +40,8 @@ class BasicModule extends ModuleAbstract {
 
         $this->router = new Router();
         $this->modules = [];
+        $this->modulesToLoad = [];
+        $this->injections = empty($injections) ? [] : $injections;
 
         // Load the module routes.
         $this->addModuleRoutes();
@@ -51,6 +55,7 @@ class BasicModule extends ModuleAbstract {
         return parent::__get($name);
 
     }
+
     // If it has submodules, add the routes.
     protected function addModuleRoutes()
     {
@@ -68,7 +73,10 @@ class BasicModule extends ModuleAbstract {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
             };
 
-            $this->loadModule($m, $id);
+            // This will ease the posterior modules autoloading process.
+            if(array_key_exists('autoload', $m) && $m['autoload'] === true) {
+                $this->modulesToLoad[$m['id']] = $m;
+            }
         }
         $this->router->appendRoutes($routes);
     }
@@ -101,13 +109,23 @@ class BasicModule extends ModuleAbstract {
             $mClass = $this->config->get('moduleClassName');
         }
 
-        $mod = new $mClass($cfg);
+        $mod = new $mClass($cfg, $this->injections);
         return $this->modules[$modId] =  $mod;
     }
 
     //Initialize the module
     public function init($uri)
     {
+        if(empty($uri)) {
+            $uri = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
+            $uri = empty($uri) ? '/' : $uri;
+        }
+
+        // This allow the autoloading of submodules with the config option 'autoload' set to true.
+        foreach($this->modulesToLoad as $mCfgArray){
+            $this->loadModule($mCfgArray, $mCfgArray['id']);
+        }
+
         return $this->router->check($uri);
     }
 

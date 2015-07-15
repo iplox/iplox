@@ -1,14 +1,14 @@
 <?php
 
 namespace Iplox\Mvc;
-
+use Iplox\Config;
 use Iplox\BasicModule;
 
     class Module extends BasicModule
 {
-    public function __construct($cfg)
+    public function __construct(Config $cfg, $injections = null)
     {
-        parent::__construct($cfg);
+        parent::__construct($cfg, $injections);
 
         // Add the options related to this module.
         $cfg->addKnownOptions([
@@ -58,15 +58,6 @@ use Iplox\BasicModule;
         ]);
     }
 
-    public function init($uri)
-    {
-        if(empty($uri)) {
-            $uri = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
-            $uri = empty($uri) ? '/' : $uri;
-        }
-        $this->router->check($uri);
-    }
-
     public function captureNSControllerMethod($ns, $controller, $method, $params='') {
         $controllerName =
             $this->config->namespace . '\\' .
@@ -75,7 +66,7 @@ use Iplox\BasicModule;
             ucwords($controller) . $this->config->controllerSuffix;
 
         if(class_exists($controllerName)) {
-            $inst = new $controllerName($this->config);
+            $inst = new $controllerName($this->config, $this->injections);
             if(method_exists($inst, $method . ucwords($this->router->requestMethod))) {
                 call_user_func_array(array($inst, $method . ucwords($this->router->requestMethod)), preg_split('/\/{1}/', $params));
             } else if(method_exists($inst, $method . ucwords($this->config->alternativeMethodSuffix))){
