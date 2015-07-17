@@ -53,4 +53,19 @@ class Response
         }
         exit();
     }
+
+    public static function sessionRedirect($location)
+    {
+        header("Location: $location", true, 302);
+    }
+
+    public static function temporaryRedirect($location)
+    {
+        header("Location: $location", true, 307);
+    }
+
+    public static function permanentRedirect($location)
+    {
+        header("Location: $location", true, 301);
+    }
 }

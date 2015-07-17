@@ -1,7 +1,7 @@
 <?php
 
 namespace Iplox;
-
+use Iplox\Http\Request;
 use Composer\Autoload\ClassLoader;
 
 class BasicModule extends ModuleAbstract {
@@ -41,7 +41,12 @@ class BasicModule extends ModuleAbstract {
         $this->router = new Router();
         $this->modules = [];
         $this->modulesToLoad = [];
-        $this->injections = empty($injections) ? [] : $injections;
+        $this->injections = ['module' => $this];
+        if(empty($injections) && count($injections) > 0){
+            foreach($injections as $k => $inject){
+                $this->injections[$k] = $inject;
+            }
+        }
 
         // Load the module routes.
         $this->addModuleRoutes();
@@ -116,17 +121,14 @@ class BasicModule extends ModuleAbstract {
     //Initialize the module
     public function init($uri)
     {
-        if(empty($uri)) {
-            $uri = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
-            $uri = empty($uri) ? '/' : $uri;
-        }
+        $req = new Request($uri);
 
         // This allow the autoloading of submodules with the config option 'autoload' set to true.
         foreach($this->modulesToLoad as $mCfgArray){
             $this->loadModule($mCfgArray, $mCfgArray['id']);
         }
 
-        return $this->router->check($uri);
+        return $this->router->check($req->uri);
     }
 
 

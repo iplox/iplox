@@ -6,20 +6,41 @@ namespace Iplox\Http;
 class Request
 {
     protected static $current;
+    protected $uri;
+    protected $params;
+
+    public function __construct($uri = '/', $params = '')
+    {
+        $this->uri = empty($uri) ? $this->removeQueryString($_SERVER['REQUEST_URI']) : $uri;
+        $this->params = $params;
+    }
 
     public static function getCurrent()
     {
         if(null === static::$current){
-            static::$current = new Request();
+            $uri = self::removeQueryString($_SERVER['REQUEST_URI']);
+            static::$current = new Request(
+                $uri,
+                $_SERVER['QUERY_STRING']
+            );
         }
 
         return static::$current;
+    }
+
+    public function removeQueryString($uri)
+    {
+        return preg_replace('/\?(.*\=.*)*$/', '', $uri);
     }
 
     public function __get($name)
     {
         if($name === 'method'){
             return $_SERVER['REQUEST_METHOD'];
+        } else if($name === 'uri') {
+            return $this->uri;
+        } else if ($name === 'params') {
+            return $this->params;
         }
     }
 
