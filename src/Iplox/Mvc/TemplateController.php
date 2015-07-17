@@ -2,23 +2,29 @@
 
 namespace Iplox\Mvc;
 use \Smarty;
-use Iplox\Controller;
+use Iplox\BaseController;
+use Iplox\Config;
+use Iplox\AbstractModule;
 
-class TemplateController extends Controller {
+class TemplateController extends BaseController {
+    protected $module;
     protected $view;
     protected $data = [];
     protected $defaultTemplate = 'index';
     protected $defaultExtention = 'tpl';
 
-    public function __construct($cfg){
+    public function __construct(Config $cfg, AbstractModule $module = null){
+
+        parent::__construct($cfg, $module);
+
         $this->view = new Smarty();
 
-        $baseDir = $cfg->get('directory') . DIRECTORY_SEPARATOR . $cfg->get('viewsDir') . DIRECTORY_SEPARATOR;
+        $viewBaseDir = $cfg->get('directory') . DIRECTORY_SEPARATOR . $cfg->get('viewsDir') . DIRECTORY_SEPARATOR;
         $cfg->addKnownOptions('smarty', [
-            'pluginsDir' => $baseDir .'plugins',
-            'templateDir' => $baseDir .'templates',
-            'cacheDir' => $baseDir .'cache',
-            'setCompileDir' => $baseDir .'compiles',
+            'pluginsDir' => $viewBaseDir .'plugins',
+            'templateDir' => $viewBaseDir .'templates',
+            'cacheDir' => $viewBaseDir .'cache',
+            'setCompileDir' => $viewBaseDir .'compiles',
         ]);
 
         // Load the entire smarty optionSet 
