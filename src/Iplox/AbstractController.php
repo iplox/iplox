@@ -1,10 +1,9 @@
 <?php
 
 namespace Iplox;
-use Iplox\Http\Response;
-use Iplox\Http\StatusCode;
 
-class Controller {
+abstract class AbstractController
+{
     public $router;
     protected $response;
 
@@ -20,10 +19,6 @@ class Controller {
         }
     }
 
-    public function respond($data, $contentType = null, $statusCode = StatusCode::OK)
-    {
-        $contentType = empty($contentType) ? $this->config->get('defaultContentType') : $contentType;
-        return new Response($data, $contentType, $statusCode);
-    }
+    public abstract function respond($data, $contentType = null, $statusCode = StatusCode::OK);
 
 }
