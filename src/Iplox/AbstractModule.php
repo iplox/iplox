@@ -2,7 +2,7 @@
 
 namespace Iplox;
 
-abstract class ModuleAbstract {
+abstract class AbstractModule {
 	
 	protected $config;
 
@@ -13,7 +13,8 @@ abstract class ModuleAbstract {
 			'directory' => '',
 			'configDir' => 'configs',
 			'env' => 'development',
-			'configFilesSuffix' => 'Config'
+			'configFilesSuffix' => 'Config',
+			'route' => ''
 		]);
 
 		// In submodules this is usually necessary.

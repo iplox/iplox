@@ -2,13 +2,14 @@
 
 namespace Iplox\Mvc;
 use Iplox\Config;
-use Iplox\BasicModule;
+use Iplox\AbstractModule;
+use Iplox\BaseModule;
 
-    class Module extends BasicModule
+class Module extends BaseModule
 {
-    public function __construct(Config $cfg, $injections = null)
+    public function __construct(Config $cfg, AbstractModule $parent = null, Array $injections = null)
     {
-        parent::__construct($cfg, $injections);
+        parent::__construct($cfg, $parent, $injections);
 
         // Add the options related to this module.
         $cfg->addKnownOptions([
@@ -66,7 +67,7 @@ use Iplox\BasicModule;
             ucwords($controller) . $this->config->controllerSuffix;
 
         if(class_exists($controllerName)) {
-            $inst = new $controllerName($this->config, $this->injections);
+            $inst = new $controllerName($this->config, $this, $this->injections);
             if(method_exists($inst, $method . ucwords($this->router->requestMethod))) {
                 call_user_func_array(array($inst, $method . ucwords($this->router->requestMethod)), preg_split('/\/{1}/', $params));
             } else if(method_exists($inst, $method . ucwords($this->config->alternativeMethodSuffix))){
