@@ -4,14 +4,16 @@ namespace Iplox;
 use Iplox\Http\Request;
 use Composer\Autoload\ClassLoader;
 
-class BasicModule extends ModuleAbstract {
+class BaseModule extends AbstractModule {
 
     protected $router;
-    protected $modules;
+    protected $children;
+    protected $parent;
     protected $modulesToLoad;
     protected $injections;
+    protected $baseUrl;
 
-    public function __construct(Config $cfg, $injections)
+    public function __construct(Config $cfg, AbstractModule $parent = null, Array $injections = null)
     {
         //Add options for a General set.
         $cfg->addKnownOptions([
@@ -38,15 +40,18 @@ class BasicModule extends ModuleAbstract {
 
         parent::__construct($cfg);
 
-        $this->router = new Router();
-        $this->modules = [];
+        // The parent module
+        $this->parent = $parent;
+
+        // The children modules
+        $this->children = [];
         $this->modulesToLoad = [];
-        $this->injections = ['module' => $this];
-        if(empty($injections) && count($injections) > 0){
-            foreach($injections as $k => $inject){
-                $this->injections[$k] = $inject;
-            }
-        }
+
+        // Pass this objects to the children submodules
+        $this->injections = empty($injections) ? [] : $injections;
+
+        // The router of this module
+        $this->router = new Router();
 
         // Load the module routes.
         $this->addModuleRoutes();
@@ -114,14 +119,15 @@ class BasicModule extends ModuleAbstract {
             $mClass = $this->config->get('moduleClassName');
         }
 
-        $mod = new $mClass($cfg, $this->injections);
-        return $this->modules[$modId] =  $mod;
+        $mod = new $mClass($cfg, $this, $this->injections);
+        return $this->children[$modId] =  $mod;
     }
 
     //Initialize the module
-    public function init($uri)
+    public function init($uri = null)
     {
         $req = new Request($uri);
+        $this->baseUrl = ($this->parent and $this->parent->baseUrl) ? $this->parent->baseUrl . $this->config->get('route') : $this->config->get('route');
 
         // This allow the autoloading of submodules with the config option 'autoload' set to true.
         foreach($this->modulesToLoad as $mCfgArray){
@@ -141,9 +147,8 @@ class BasicModule extends ModuleAbstract {
         $regExpReq = "/\/?".str_replace('/', '\/', $modCfgArray['route'])."\/?/";
         $reqUri = preg_replace($regExpReq, '/', $this->router->request);
 
-
-        if (array_key_exists($modCfgArray['id'], $this->modules)) {
-            $mod = $this->modules[$modCfgArray['id']];
+        if (array_key_exists($modCfgArray['id'], $this->children)) {
+            $mod = $this->children[$modCfgArray['id']];
         } else {
             $mod = $this->loadModule($modCfgArray, $modCfgArray['id']);
         }
