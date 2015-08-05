@@ -1,10 +1,10 @@
 {
-   "name":"stanlix/iploxphp",
+   "name":"iplox/iploxphp",
 	"authors": [
-            {
-                "name": "Jr. Stanley Zapata",
-                "email": "jzapata@stanlix.com"
-            }
+        {
+            "name": "Jr. Stanley Zapata",
+            "email": "jzapata@stanlix.com"
+        }
 	],
    "config": {
       "vendor-dir": "vendor/"
