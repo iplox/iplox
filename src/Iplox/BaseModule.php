@@ -52,9 +52,6 @@ class BaseModule extends AbstractModule {
 
         // The router of this module
         $this->router = new Router();
-
-        // Load the module routes.
-        $this->addModuleRoutes();
     }
 
     public function __get($name)
@@ -76,17 +73,21 @@ class BaseModule extends AbstractModule {
         $modCfg = [];
         $routes = [];
         $id = 0;
+
         foreach($modules as $m){
             $m['id'] = $id++;
-            $modCfg[$m['route']] = $m;
-            $routes[$m['route']] = function () use (&$modCfg) {
-                call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
-            };
 
             // This will ease the posterior modules autoloading process.
             if(array_key_exists('autoload', $m) && $m['autoload'] === true) {
                 $this->modulesToLoad[$m['id']] = $m;
             }
+
+            if(! $m['route']) continue;
+
+            $modCfg[$m['route']] = $m;
+            $routes[$m['route']] = function () use (&$modCfg) {
+                call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
+            };
         }
         $this->router->appendRoutes($routes);
     }
@@ -128,6 +129,9 @@ class BaseModule extends AbstractModule {
     {
         $req = new Request($uri);
         $this->baseUrl = ($this->parent and $this->parent->baseUrl) ? $this->parent->baseUrl . $this->config->get('route') : $this->config->get('route');
+
+        // Load the module routes.
+        $this->addModuleRoutes();
 
         // This allow the autoloading of submodules with the config option 'autoload' set to true.
         foreach($this->modulesToLoad as $mCfgArray){
