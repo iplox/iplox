@@ -19,13 +19,11 @@ class Request
     public static function getCurrent()
     {
         if(null === static::$current){
-            $uri = self::removeQueryString($_SERVER['REQUEST_URI']);
             static::$current = new Request(
-                $uri,
+                null,
                 $_SERVER['QUERY_STRING']
             );
         }
-
         return static::$current;
     }
 
