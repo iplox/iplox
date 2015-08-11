@@ -137,6 +137,8 @@ class Router {
                     ['/\*\w*/', '/\)\?/','/\(\(/', '/\)\)/'],
                     ['(.+)', ')?','(',')'],
                     $rs);
+            } else if(array_key_exists($i, $pathSections) && $rs === $pathSections[$i]) {
+                $regexRoute .= $pathSeparator . preg_quote($rs);
             }
             //Match when not found any of the above pattern put the curresponding string in the $pathSections array, if there is one.
             else {

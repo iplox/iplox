@@ -36,4 +36,12 @@ class RouterTest extends PHPUnit_Framework_TestCase {
         $this->assertEquals([], $a9, "The route '/this/is/(it)?' does not match the request '/this/is'.");
         $this->assertEquals(['it'], $a10, "The route '/this/is/(it)?' does not match the request '/this/is/it'.");
     }
+
+    public function testCheckRoute2()
+    {
+        $r = new Router();
+        $a1 = $r->checkRoute('/sobre-nosotros/equipo', '/sobre-nosotros/equipo');
+        $this->assertEquals([], $a1, "The route '/sobre-nosotros/equipo' is not matched by the '/sobre-nosotros/equipo' uri.");
+
+    }
 }
