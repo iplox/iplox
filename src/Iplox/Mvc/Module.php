@@ -125,16 +125,29 @@ class Module extends BaseModule
             }
             throw new \Exception("A \"defaultGlobalHandler\" was not provided or is not valid.");
         } else {
-            $handler = [$this, $this->config->notFoundHandler];
-            echo $this->config->notFoundHandler;
-            if (is_callable($handler)) {
-                return call_user_func($handler, $params);
+            $handler = $this->config->get('notFoundHandler');
+//            $handler = [$this, $this->config->notFoundHandler];
+//            if (is_callable($handler)) {
+//                return call_user_func($handler, $params);
+//            } else
+            if(is_string($handler) && preg_match('/^\w*\->\w*$/', $handler) > 0) {
+                $parts = preg_split('/\->/', $handler);
+                $className = $this->config->get('namespace').$parts[0];
+                if(class_exists($className) and is_callable([
+                        $inst = new $className($this->config),
+                        $parts[1]
+                    ])){
+                    return call_user_func([$inst, $parts[1]]);
+                } else {
+                    return $this->notFoundHandler('');
+                }
             }
-            throw new \Exception("A \"notFoundHandler\" was not provided or is not valid.");
+            throw new \Exception("A \"notFoundHandler\" was not provided or is a callable.");
         }
     }
 
     public function notFoundHandler ($param) {
+        $nfclass = __NAMESPACE__.'\\NotFound';
         echo "<h2>Not found requested resource</h2>This is the notFoundHandler method.";
     }
 
