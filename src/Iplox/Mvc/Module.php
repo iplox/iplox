@@ -14,11 +14,11 @@ class Module extends BaseModule
         // Add the options related to this module.
         $cfg->addKnownOptions([
             'controllerNamespace' => 'Controllers',
-            'controllerSuffix' => 'Controller',
+            'controllerSuffix' => '',
             'alternativeMethodSuffix' => 'Action',
             'viewsDir' => 'views', 
-            'modelSuffix' => 'Model',
-            'entitySuffix' => 'Entity',
+            'modelSuffix' => '',
+            'entitySuffix' => '',
             'notFoundHandler'=> 'notFoundHandler',
             'defaultGlobalHandler' => 'defaultGlobalHandler',
             'defaultController' => 'Index',

@@ -13,7 +13,7 @@ abstract class AbstractModule {
 			'directory' => '',
 			'configDir' => 'configs',
 			'env' => 'development',
-			'configFilesSuffix' => 'Config',
+			'configFilesSuffix' => '',
 			'route' => ''
 		]);
 
