@@ -16,11 +16,10 @@ class Module extends BaseModule
             'controllerNamespace' => 'Controllers',
             'controllerSuffix' => '',
             'alternativeMethodSuffix' => 'Action',
-            'viewsDir' => 'views', 
+            'viewsDir' => 'views',
             'modelSuffix' => '',
             'entitySuffix' => '',
-            'notFoundHandler'=> 'notFoundHandler',
-            'defaultGlobalHandler' => 'defaultGlobalHandler',
+            'notFoundHandler' => 'Classes\\NotFound->index',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
             'moduleClassName' => __CLASS__
@@ -73,9 +72,9 @@ class Module extends BaseModule
             } else if(method_exists($inst, $method . ucwords($this->config->alternativeMethodSuffix))){
                 call_user_func_array(array($inst, $method . ucwords($this->config->alternativeMethodSuffix)), preg_split('/\/{1}/', $params));
             } else {
-                throw new \Exception("the method \"$method" .
+                throw new \Exception("The method \"$method" .
                     ucwords($this->router->requestMethod)."\" or \"" .
-                    $method . ucwords($this->config->alternativeMethodSuffix)."\" was not found in the controller $controllerName.");
+                    $method . ucwords($this->config->get('alternativeMethodSuffix'))."\" was not found in the controller $controllerName.");
             }
             return true;
         } else {
@@ -119,39 +118,26 @@ class Module extends BaseModule
                     $params
                 );
             }
-            $handler = [$this, $this->config->defaultGlobalHandler];
-            if (is_callable($handler)) {
-                return call_user_func($handler);
-            }
-            throw new \Exception("A \"defaultGlobalHandler\" was not provided or is not valid.");
+            throw new \Exception("Invalid ".
+                $this->config->get('defaultController').$this->config->get('controllerSuffix').
+                "->".$this->config->get('defaultMethod').$this->config->get('alternativeMethodSuffix').
+                ". Verify that the values of these config options \"defaultController\" and \"defaultMethod\" are correct.");
         } else {
             $handler = $this->config->get('notFoundHandler');
-//            $handler = [$this, $this->config->notFoundHandler];
-//            if (is_callable($handler)) {
-//                return call_user_func($handler, $params);
-//            } else
-            if(is_string($handler) && preg_match('/^\w*\->\w*$/', $handler) > 0) {
+            if (is_callable($handler)) {
+                return call_user_func($handler, $params);
+            } elseif(is_string($handler) && preg_match('/^[\w\\\]*->\w*$/', $handler) > 0) {
                 $parts = preg_split('/\->/', $handler);
-                $className = $this->config->get('namespace').$parts[0];
+                $className = $this->config->get('namespace').'\\'.$parts[0].$this->config->get('controllerSuffix');
+                $methodName = $parts[1].$this->config->get('alternativeMethodSuffix');
                 if(class_exists($className) and is_callable([
-                        $inst = new $className($this->config),
-                        $parts[1]
+                        $inst = new $className($this->config, $this),
+                        $methodName
                     ])){
-                    return call_user_func([$inst, $parts[1]]);
-                } else {
-                    return $this->notFoundHandler('');
+                    return call_user_func([$inst, $methodName]);
                 }
             }
-            throw new \Exception("A \"notFoundHandler\" was not provided or is a callable.");
+            throw new \Exception("A \"notFoundHandler\" config option was not provided or doesn't represent a callable function.");
         }
-    }
-
-    public function notFoundHandler ($param) {
-        $nfclass = __NAMESPACE__.'\\NotFound';
-        echo "<h2>Not found requested resource</h2>This is the notFoundHandler method.";
-    }
-
-    public function defaultGlobalHandler() {
-        echo "<h2>Welcome</h2>This is the globalDefaultHandler method.";
     }
 }
