@@ -23,6 +23,7 @@ class BaseModule extends AbstractModule {
             // Submodules options
             'modules' => [],
             'modulesDir' => 'modules',
+            'publicDir' => '../public',
             'moduleClassName' => __CLASS__,
             'autoload' => false
         ]);
@@ -151,7 +152,17 @@ class BaseModule extends AbstractModule {
 
         // This allow the autoloading of submodules with the config option 'autoload' set to true.
         foreach($this->modulesToLoad as $mCfgArray){
-            $this->loadModule($mCfgArray, $mCfgArray['id']);
+            $m = $this->loadModule($mCfgArray, $mCfgArray['id']);
+
+            // Check if the request match a public static file inside the module.
+            if(method_exists($m, 'getFile') && array_key_exists('route', $mCfgArray)){
+                $rgx = '/^(\/*)?'.preg_quote($mCfgArray['route']).'(\/*)?/';
+                $fileRequest = preg_replace($rgx, '', $req->uri);
+                $f = $m->getFile($fileRequest);
+                if($f){
+                    return $f;
+                }
+            }
         }
         return $this->router->check($req->uri);
     }
@@ -173,5 +184,20 @@ class BaseModule extends AbstractModule {
         }
 
         $mod->init($reqUri);
+    }
+
+
+    public function getFile($uri)
+    {
+        $pubDir = $this->config->get('publicDir');
+        if(preg_match('/^\//', $pubDir) === 0){
+            $pubDir = $this->config->get('directory') . $pubDir;
+        }
+        $filePath = realpath($pubDir. DIRECTORY_SEPARATOR . $uri);
+        if(is_readable($filePath)){
+            return readfile($filePath);
+        } else {
+            return false;
+        }
     }
 }
