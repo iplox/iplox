@@ -2,24 +2,24 @@
 
 namespace Iplox\Restful;
 
-use Iplox\BasicModule;
+use Iplox\AbstractModule;
+use Iplox\BaseModule;
+use Iplox\Config;
 
-class Module extends BasicModule
+class Module extends BaseModule
 {
-    public function __construct($cfg)
+    public function __construct(Config $cfg, AbstractModule $mod, Array $injections = null)
     {
-
-        parent::__construct($cfg);
+        parent::__construct($cfg, $mod, $injections);
 
         // Add the general options.
         $cfg->addKnownOptions([
             'controllerNamespace' => 'Controllers',
-            'controllerSuffix' => 'Controller',
+            'controllerSuffix' => '',
             'alternativeMethodSuffix' => 'Action',
-            'modelSuffix' => 'Model',
-            'entitySuffix' => 'Entity',
-            'notFoundHandler'=> 'notFoundHandler',
-            'defaultGlobalHandler' => 'defaultGlobalHandler',
+            'modelSuffix' => '',
+            'entitySuffix' => '',
+            'notFoundHandler'=> 'Classes\\NotFound->index',
             'defaultController' => 'Index',
             'defaultMethod' => 'index',
             'moduleClassName' => __CLASS__,
@@ -27,7 +27,7 @@ class Module extends BasicModule
         ]);
 
         // Options for mapping resources to controllers.
-        $cfg->addKnownOptions('resourcesMapping', [
+        $cfg->addKnownOptions('resourceMappings', [
            'index' => 'Index'
         ]);
 
@@ -35,16 +35,17 @@ class Module extends BasicModule
 
         $this->router->addFilters([
             ':resource' => function($val) {
-                $resources = $this->config->getSet('resourcesMapping');
+                $resources = $this->config->getSet('resourceMappings');
                 return is_array($resources) && array_key_exists($val, $resources) ? true : false;
             },
         ]);
 
+        $mod = $this;
         // Filters for the Restful functionality
         $this->router->appendRoutes([
-            '/:resource/(*uriExtra)?' =>  function($resourceName, $uriExtra = '/') {
+            '/:resource/(*uriExtra)?' =>  function($resourceName, $extraUri = '/') use(&$mod) {
                 if($class = $this->getResourceController($resourceName)){
-                    $c = new $class($this->config, $uriExtra);
+                    $c = new $class($this->config, $mod, $extraUri);
                     return $c->response;
                 }
                 return false;
@@ -52,7 +53,7 @@ class Module extends BasicModule
         ]);
     }
 
-    public function init($uri)
+    public function init($uri = null)
     {
         if(empty($uri)) {
             $uri = preg_replace('/\?(.*\=.*)*$/', '', $_SERVER['REQUEST_URI']) ;
@@ -64,7 +65,7 @@ class Module extends BasicModule
 
     public function getResourceController($resourceName)
     {
-        $rn = $this->config->get($resourceName, 'resourcesMapping');
+        $rn = $this->config->get($resourceName, 'resourceMappings');
         $class = $this->config->namespace . '\\' .
             $this->config->controllerNamespace . '\\' .
             ucwords($rn) . $this->config->controllerSuffix;

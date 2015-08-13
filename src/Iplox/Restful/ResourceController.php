@@ -1,17 +1,20 @@
 <?php
 
 namespace Iplox\Restful;
-use Iplox\Controller;
+use Iplox\AbstractModule;
+use Iplox\BaseController;
+use Iplox\Config;
 use Iplox\Http\Request;
 use Iplox\Http\Response;
 
-class ResourceController extends Controller
+class ResourceController extends BaseController
 {
     protected $handlerForMethods;
+    public $response;
 
-    public function __construct($cfg, $uri)
+    public function __construct(Config $cfg, AbstractModule $module, $uri)
     {
-        parent::__construct();
+        parent::__construct($cfg, $module);
 
         $this->config = $cfg;
         $this->handlerForMethods = [
