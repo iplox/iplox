@@ -100,8 +100,21 @@ class BaseModule extends AbstractModule {
         // If this class can't be loaded, enable the autoload using the composer class loader.
         if(! empty($ns)){
             // Full directory of the module to be initialized.
-            $dir = $this->config->get('directory') . DIRECTORY_SEPARATOR .
-                $this->config->get('modulesDir') . DIRECTORY_SEPARATOR .  $cfg->get('directory');
+            $dir = $cfg->get('directory');
+            $parentDir = $this->config->get('directory');
+            $parentModulesDir = $this->config->get('modulesDir');
+            if(preg_match('/^\//', $dir) > 0){
+                ;
+            } else if(preg_match('/^\//', $parentModulesDir) > 0){
+                $dir = $parentModulesDir . DIRECTORY_SEPARATOR .  $dir;
+            } else {
+                $dir = $parentDir . DIRECTORY_SEPARATOR . $parentModulesDir . DIRECTORY_SEPARATOR . $dir;
+            }
+            $dirReal = realpath($dir) . DIRECTORY_SEPARATOR;
+
+            if(! $dirReal){
+                throw new \Exception("The directory $dir of the child module does not exists or is not readable.");
+            }
 
             // Override the current module 'directory' value
             $cfg->set('directory', $dir);
@@ -128,7 +141,10 @@ class BaseModule extends AbstractModule {
     public function init($uri = null)
     {
         $req = new Request($uri);
-        $this->baseUrl = ($this->parent and $this->parent->baseUrl) ? $this->parent->baseUrl . $this->config->get('route') : $this->config->get('route');
+        $this->baseUrl = ($this->parent and $this->parent->baseUrl) ?
+            $this->parent->baseUrl . $this->config->get('route') :
+            $this->config->get('route');
+
 
         // Load the module routes.
         $this->addModuleRoutes();
@@ -137,7 +153,6 @@ class BaseModule extends AbstractModule {
         foreach($this->modulesToLoad as $mCfgArray){
             $this->loadModule($mCfgArray, $mCfgArray['id']);
         }
-
         return $this->router->check($req->uri);
     }
 

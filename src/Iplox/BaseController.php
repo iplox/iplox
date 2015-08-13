@@ -11,6 +11,7 @@ class BaseController extends AbstractController
 
     public function __construct(Config $config, AbstractModule $module)
     {
+        parent::__construct($config, $module);
         $this->config = $config;
         $this->module = $module;
     }

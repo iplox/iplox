@@ -24,7 +24,11 @@ abstract class AbstractModule {
 			array_values($cfg->get(['directory', 'configDir', 'configFilesSuffix', 'env']));
 
 		// Absolute path to the config directory
-		$configDir = $dir . DIRECTORY_SEPARATOR . $configDir. DIRECTORY_SEPARATOR;
+		if(preg_match('/^\//', $configDir) === 0){
+			$configDir = $dir . DIRECTORY_SEPARATOR . $configDir;
+		}
+		$configDir = realpath($configDir) . DIRECTORY_SEPARATOR;
+
 
 		// General config file for the $optionSet.
 		$cfg->addFile(function($setName) use (&$cfg, &$configDir, &$suffix){
