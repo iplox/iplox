@@ -36,7 +36,7 @@ class Router {
             $req = $req ? preg_replace(['/^\/*/', '/\/$/'], ['/', ''], $req) : $_SERVER['REQUEST_URI'];
             $method = $method ? $method : $_SERVER['REQUEST_METHOD'];
         }
-
+        $req = empty($req) ? '/' : $req;
         //
         if(in_array($method, $this->routes)){
             throw new Exception('Not valid methodName was specified. Expected one of these: GET, POST, PUT, DELETE, ALL');
@@ -110,52 +110,59 @@ class Router {
      */
     public function checkRoute($route, $req) {
         $matches = [];
-        $regexRoute = '';
-        $pathSeparator = '\/';
-        $resolvedPath = '';
-        $routeSections = preg_split('/\//', preg_replace('/^\//', '', $route));
-        $pathSections = preg_split('/\//', preg_replace('/^\//', '', $req));
 
-        foreach($routeSections as $i => $rs) {
-            // Si $rs esta registrado como filtro, se verifica si el valor pasado es válido.
-            if(array_key_exists($rs, $this->filters) &&
-                array_key_exists($i, $pathSections) &&
-                !$this->checkFilter($rs, [$pathSections[$i], $resolvedPath])){
-                return false;
-            }
+        $rgxR = preg_replace(
+            [
+                '/\/+/',
+                '/\{([\w\-]*)\}\?/',
+                '/\{[\w\-]*\}/',
+                '/(:\w*\?)|(\{:\w*\}\?)/',
+                '/(:\w*)|(\{:\w*\})/',
+                '/(\*\w*\?)|(\{\*\w*\}\?)/',
+                '/(\*\w*)|(\{\*\w*\})/'
+            ], [
+                '\/',
+                '?($1)?',
+                '$1',
+                '<segment_opt>',
+                '<segment>',
+                '<glob_opt>',
+                '<glob>'
+            ],
+            $route
+        );
 
-            //Match when found :value pattern
-            else if(preg_match('/:\w*/', $rs) > 0){
-                $regexRoute .= preg_replace(
-                    ['/:\w*/', '/\)\?/', '/\)\)/', '/\(\(/'],
-                    ['('.$pathSeparator.'[^\/]+'.')', ')?', ')', '('],
-                    $rs);
-            }
-            //Match when found *value pattern
-            else if(preg_match('/\*\w*/', $rs) > 0){
-                $regexRoute .= preg_replace(
-                    ['/\*\w*/', '/\)\?/','/\(\(/', '/\)\)/'],
-                    ['(.+)', ')?','(',')'],
-                    $rs);
-            } else if(array_key_exists($i, $pathSections) && $rs === $pathSections[$i]) {
-                $regexRoute .= $pathSeparator . preg_quote($rs);
-            }
-            //Match when not found any of the above pattern put the curresponding string in the $pathSections array, if there is one.
-            else {
-                $regexRoute .= preg_replace(
-                    ['/\w+/', '/\)\?/', '/\(\(/', '/\)\)/'],
-                    [$pathSeparator.$rs, ')?', '(', ')'],
-                    $rs);
-            }
-            $pathSeparator = '\/';
-        }
         //The actual regular expression generated.
-        $regexRoute = '/^'.$regexRoute.'/';
+        $regexRoute = '/^' . str_replace([
+                '<segment_opt>',
+                '<segment>',
+                '<glob_opt>',
+                '<glob>',
+            ], [
+                '?(\/[\w\-]*)?',
+                '([\w\-]*)',
+                '?(\/[\w\-\/]*)?',
+                '([\w\-\/]*)',
+            ],
+            $rgxR
+        ) . '$/';
 
-        // Se verifica si $req coincide con el $regexRoute construído a partir de la ruta ($routeSections)
+        $req = preg_replace(['/\/$/', '/\/+/'], ['', '/'], $req);
+
+        // Check if the $req uri match the route.
         if(preg_match($regexRoute, $req, $matches) > 0) {
             //This remove the first element matched which is not required.
             array_shift($matches);
+
+            preg_match('/:\w*/', $route, $segments);
+            foreach($segments as $i => $segment){
+                $segment = preg_replace('/^:/', '', $segment);
+                // If $segment is registered as filter and its value is valid, then proceed
+                if($this->isFilter($segment) &&
+                    !$this->checkFilter($segment, [$matches[$i], $req])){
+                    return false;
+                }
+            }
 
             //This remove the slash (/) from the beginning of all matched values.
             foreach($matches as $i=>$m){
