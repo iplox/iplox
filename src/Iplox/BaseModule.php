@@ -25,7 +25,8 @@ class BaseModule extends AbstractModule {
             'modulesDir' => 'modules',
             'publicDir' => '../public',
             'moduleClassName' => __CLASS__,
-            'autoload' => false
+            'autoload' => false,
+            'return' =>  false
         ]);
 
         //Add options for a Db (database) set.
