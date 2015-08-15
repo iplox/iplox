@@ -13,7 +13,7 @@ class TemplateController extends BaseController {
     protected $defaultTemplate = 'index';
     protected $defaultExtention = 'tpl';
 
-    public function __construct(Config $cfg, AbstractModule $module = null){
+    public function __construct(Config $cfg, AbstractModule $module = null, $params = null){
 
         parent::__construct($cfg, $module);
 

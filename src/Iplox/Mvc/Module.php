@@ -123,21 +123,26 @@ class Module extends BaseModule
                 "->".$this->config->get('defaultMethod').$this->config->get('alternativeMethodSuffix').
                 ". Verify that the values of these config options \"defaultController\" and \"defaultMethod\" are correct.");
         } else {
-            $handler = $this->config->get('notFoundHandler');
-            if (is_callable($handler)) {
-                return call_user_func($handler, $params);
-            } elseif(is_string($handler) && preg_match('/^[\w\\\]*->\w*$/', $handler) > 0) {
-                $parts = preg_split('/\->/', $handler);
-                $className = $this->config->get('namespace').'\\'.$parts[0].$this->config->get('controllerSuffix');
-                $methodName = $parts[1].$this->config->get('alternativeMethodSuffix');
-                if(class_exists($className) and is_callable([
-                        $inst = new $className($this->config, $this),
-                        $methodName
-                    ])){
-                    return call_user_func([$inst, $methodName]);
-                }
-            }
-            throw new \Exception("A \"notFoundHandler\" config option was not provided or doesn't represent a callable function.");
+            $this->notFoundHandler($params);
         }
+    }
+
+    public function notFoundHandler($params)
+    {
+        $handler = $this->config->get('notFoundHandler');
+        if (is_callable($handler)) {
+            return call_user_func($handler, $params);
+        } elseif(is_string($handler) && preg_match('/^[\w\\\]*->\w*$/', $handler) > 0) {
+            $parts = preg_split('/\->/', $handler);
+            $className = $this->config->get('namespace').'\\'.$parts[0].$this->config->get('controllerSuffix');
+            $methodName = $parts[1].$this->config->get('alternativeMethodSuffix');
+            if(class_exists($className) and is_callable([
+                    $inst = new $className($this->config, $this, $params),
+                    $methodName
+                ])){
+                return call_user_func([$inst, $methodName]);
+            }
+        }
+        throw new \Exception("A \"notFoundHandler\" config option was not provided or doesn't represent a callable function.");
     }
 }
