@@ -41,11 +41,11 @@ class ResourceController extends BaseController
             '/' =>  array($this, $handler),
         ]);
 
-        $data = $this->router->check($uri);
-        if($data instanceof Response){
-            $this->response = $data;
+        $response = $this->router->check($uri);
+        if($response instanceof Response){
+            $this->response = $response;
         } else {
-            $this->response = new Response(empty($data) ? [] : $data, $this->config->get('defaultContentType'));
+            $this->response = new Response(empty($response) ? [] : $response, $this->config->get('defaultContentType'));
         }
     }
 
