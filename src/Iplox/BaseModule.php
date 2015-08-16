@@ -192,7 +192,7 @@ class BaseModule extends AbstractModule {
     {
         $pubDir = $this->config->get('publicDir');
         if(preg_match('/^\//', $pubDir) === 0){
-            $pubDir = $this->config->get('directory') . $pubDir;
+            $pubDir = $this->config->get('directory') . DIRECTORY_SEPARATOR . $pubDir;
         }
         $filePath = realpath($pubDir. DIRECTORY_SEPARATOR . $uri);
         if(is_readable($filePath)){
