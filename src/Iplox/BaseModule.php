@@ -91,7 +91,7 @@ class BaseModule extends AbstractModule {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
             };
         }
-        $this->router->appendRoutes($routes);
+        $this->router->prependRoutes($routes);
     }
 
     protected function loadModule($modCfgArray, $modId)
