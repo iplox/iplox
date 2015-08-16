@@ -36,7 +36,7 @@ class Module extends BaseModule
         $cfg->refreshCache();
 
         $this->router->addFilters([
-            ':resource' => function($val) {
+            'resource' => function($val) {
                 $resources = $this->config->getSet('resourceMappings');
                 return is_array($resources) && array_key_exists($val, $resources) ? true : false;
             },

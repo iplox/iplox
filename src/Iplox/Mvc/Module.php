@@ -29,7 +29,7 @@ class Module extends BaseModule
 
         //Determine if any of this routes actually exists as an object
         $this->router->addFilters(array(
-            ':controller' => function($name, $path) {
+            'controller' => function($name, $path) {
                 $ns = $this->config->namespace . '\\' .
                     ucwords(preg_replace(['/^\//', '/\//'], ['', '\\'], $path)) .
                     $this->config->controllerNamespace . '\\';
@@ -39,7 +39,7 @@ class Module extends BaseModule
                 }
                 return false;
             },
-            ':num'=> function($val){
+            'num'=> function($val){
                 if(is_numeric($val)){
                     return true;
                 } else {
@@ -50,11 +50,11 @@ class Module extends BaseModule
 
         // Filters for the MVC Controller functionality
         $this->router->appendRoutes([
-            '/:namespace/:controller/:method/(*params)?'=>  array($this, 'captureNSControllerMethod'),
-            '/:namespace/:controller/(*params)?'=>  array($this, 'captureNSController'),
-            '/:controller/:method/(*params)?'=>  array($this, 'captureControllerMethod'),
-            '/:controller/(*param)?' => array($this, 'captureController'),
-            '/(*param)?' => array($this, 'captureAll')
+            '/:namespace/:controller/:method/{*params}?'=>  array($this, 'captureNSControllerMethod'),
+            '/:namespace/:controller/{*params}?'=>  array($this, 'captureNSController'),
+            '/:controller/:method/{*params}?'=>  array($this, 'captureControllerMethod'),
+            '/:controller/{*param}?' => array($this, 'captureController'),
+            '/{*param}?' => array($this, 'captureAll')
         ]);
     }
 
