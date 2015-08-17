@@ -50,8 +50,8 @@ class Module extends BaseModule
 
         // Filters for the MVC Controller functionality
         $this->router->appendRoutes([
-            '/:namespace/:controller/:method/{*params}?'=>  array($this, 'captureNSControllerMethod'),
-            '/:namespace/:controller/{*params}?'=>  array($this, 'captureNSController'),
+//            '/:namespace/:controller/:method/{*params}?'=>  array($this, 'captureNSControllerMethod'),
+//            '/:namespace/:controller/{*params}?'=>  array($this, 'captureNSController'),
             '/:controller/:method/{*params}?'=>  array($this, 'captureControllerMethod'),
             '/:controller/{*param}?' => array($this, 'captureController'),
             '/{*param}?' => array($this, 'captureAll')
