@@ -60,6 +60,8 @@ class BaseModule extends AbstractModule {
     {
         if($name === 'router'){
             return $this->router;
+        } elseif ($name === 'baseUrl'){
+            return $this->baseUrl;
         }
         return parent::__get($name);
 
@@ -77,17 +79,22 @@ class BaseModule extends AbstractModule {
         $id = 0;
 
         foreach($modules as $m){
-            $m['id'] = $id++;
+            if(!array_key_exists('default', $m) || !is_array($m['default'])){
+                $m['default'] = [];
+            }
+            $m['default']['id'] = $id++;
 
             // This will ease the posterior modules autoloading process.
-            if(array_key_exists('autoload', $m) && $m['autoload'] === true) {
-                $this->modulesToLoad[$m['id']] = $m;
+            if(array_key_exists('autoload', $m['default']) && $m['default']['autoload'] === true) {
+                $this->modulesToLoad[$m['default']['id']] = $m;
             }
 
-            if(! $m['route']) continue;
+            if(!array_key_exists('route', $m['default']) && ! empty($m['default']['route'])) {
+                continue;
+            }
 
-            $modCfg[$m['route']] = $m;
-            $routes[$m['route']] = function () use (&$modCfg) {
+            $modCfg[$m['default']['route']] = $m;
+            $routes[$m['default']['route']] = function () use (&$modCfg) {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
             };
         }
@@ -96,7 +103,7 @@ class BaseModule extends AbstractModule {
 
     protected function loadModule($modCfgArray, $modId)
     {
-        $cfg = new Config($modCfgArray);
+        $cfg = new Config($modCfgArray['default']);
         $ns = $cfg->get('namespace');
 
         // If this class can't be loaded, enable the autoload using the composer class loader.
@@ -135,6 +142,15 @@ class BaseModule extends AbstractModule {
             $mClass = $this->config->get('moduleClassName');
         }
 
+        // Add others options sets, if provided
+        foreach($modCfgArray as $k => $optSet){
+            if($k == 'default') {
+                continue;
+            }
+            $cfg->set($optSet, null, $k);
+        }
+
+        // Instance the module.
         $mod = new $mClass($cfg, $this, $this->injections);
         return $this->children[$modId] =  $mod;
     }
@@ -153,11 +169,11 @@ class BaseModule extends AbstractModule {
 
         // This allow the autoloading of submodules with the config option 'autoload' set to true.
         foreach($this->modulesToLoad as $mCfgArray){
-            $m = $this->loadModule($mCfgArray, $mCfgArray['id']);
+            $m = $this->loadModule($mCfgArray, $mCfgArray['default']['id']);
 
             // Check if the request match a public static file inside the module.
-            if(method_exists($m, 'getFile') && array_key_exists('route', $mCfgArray)){
-                $rgx = '/^(\/*)?'.preg_quote($mCfgArray['route']).'(\/*)?/';
+            if(method_exists($m, 'getFile') && array_key_exists('route', $mCfgArray['default'])){
+                $rgx = '/^(\/*)?'.preg_quote($mCfgArray['default']['route']).'(\/*)?/';
                 $fileRequest = preg_replace($rgx, '', $req->uri);
                 $f = $m->getFile($fileRequest);
                 if($f){
@@ -175,13 +191,13 @@ class BaseModule extends AbstractModule {
     public function callModule($modCfgArray)
     {
         // The next request wont have full original request, only the remaining part.
-        $regExpReq = "/\/?".str_replace('/', '\/', $modCfgArray['route'])."\/?/";
+        $regExpReq = "/\/?".str_replace('/', '\/', $modCfgArray['default']['route'])."\/?/";
         $reqUri = preg_replace($regExpReq, '/', $this->router->request);
 
-        if (array_key_exists($modCfgArray['id'], $this->children)) {
-            $mod = $this->children[$modCfgArray['id']];
+        if (array_key_exists($modCfgArray['default']['id'], $this->children)) {
+            $mod = $this->children[$modCfgArray['default']['id']];
         } else {
-            $mod = $this->loadModule($modCfgArray, $modCfgArray['id']);
+            $mod = $this->loadModule($modCfgArray, $modCfgArray['default']['id']);
         }
 
         $mod->init($reqUri);
@@ -190,15 +206,25 @@ class BaseModule extends AbstractModule {
 
     public function getFile($uri)
     {
-        $pubDir = $this->config->get('publicDir');
-        if(preg_match('/^\//', $pubDir) === 0){
-            $pubDir = $this->config->get('directory') . DIRECTORY_SEPARATOR . $pubDir;
-        }
-        $filePath = realpath($pubDir. DIRECTORY_SEPARATOR . $uri);
+        $filePath = static::getPath($this->config->get('directory'),
+            $this->config->get('publicDir')) .
+            DIRECTORY_SEPARATOR . $uri;
         if(is_readable($filePath)){
+            $fi = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $fi->file($filePath);
+            header('Content-type: '.$mimeType);
             return readfile($filePath);
         } else {
             return false;
         }
+    }
+
+    public function getPath($optBaseDir, $path)
+    {
+        if(preg_match('/^\//', $path) === 0){
+            $path = $optBaseDir . DIRECTORY_SEPARATOR . $path;
+        }
+        $path = realpath($path);
+        return $path;
     }
 }

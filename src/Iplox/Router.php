@@ -113,6 +113,7 @@ class Router {
 
         $rgxR = preg_replace(
             [
+                '/^\/*/',
                 '/\/+/',
                 '/\{([\w\-]*)\}\?/',
                 '/\{[\w\-]*\}/',
@@ -121,6 +122,7 @@ class Router {
                 '/(\*\w*\?)|(\{\*\w*\}\?)/',
                 '/(\*\w*)|(\{\*\w*\})/'
             ], [
+                '',
                 '\/',
                 '?($1)?',
                 '$1',
@@ -133,7 +135,7 @@ class Router {
         );
 
         //The actual regular expression generated.
-        $regexRoute = '/^' . str_replace([
+        $regexRoute = '/^\/' . str_replace([
                 '<segment_opt>',
                 '<segment>',
                 '<glob_opt>',
@@ -147,7 +149,7 @@ class Router {
             $rgxR
         ) . '$/';
 
-        $req = preg_replace(['/\/$/', '/\/+/'], ['', '/'], $req);
+        $req = '/' . preg_replace(['/^\/*/', '/\/$/', '/\/+/'], ['', '', '/'], $req);
 
         // Check if the $req uri match the route.
         if(preg_match($regexRoute, $req, $matches) > 0) {

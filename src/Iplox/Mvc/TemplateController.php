@@ -19,22 +19,22 @@ class TemplateController extends BaseController {
 
         $this->view = new Smarty();
 
-        $viewBaseDir = $cfg->get('directory') . DIRECTORY_SEPARATOR . $cfg->get('viewsDir') . DIRECTORY_SEPARATOR;
+        $viewBaseDir = $module->getPath($cfg->get('directory'), $cfg->get('viewsDir')) . DIRECTORY_SEPARATOR;
         $cfg->addKnownOptions('smarty', [
             'pluginsDir' => $viewBaseDir .'plugins',
             'templateDir' => $viewBaseDir .'templates',
             'cacheDir' => $viewBaseDir .'cache',
-            'setCompileDir' => $viewBaseDir .'compiles',
+            'compileDir' => $viewBaseDir .'compiles',
         ]);
 
         // Load the entire smarty optionSet 
         $smartyCfg = $cfg->getSet('smarty');
 
         // Set the directories for smarty files.
-        $this->view->setPluginsDir($smartyCfg['pluginsDir']);
-        $this->view->setTemplateDir($smartyCfg['templateDir']);
-        $this->view->setCacheDir($smartyCfg['cacheDir']);
-        $this->view->setCompileDir($smartyCfg['setCompileDir']);
+        $this->view->setPluginsDir($module->getPath($viewBaseDir, $smartyCfg['pluginsDir']));
+        $this->view->setTemplateDir($module->getPath($viewBaseDir, $smartyCfg['templateDir']));
+        $this->view->setCacheDir($module->getPath($viewBaseDir, $smartyCfg['cacheDir']));
+        $this->view->setCompileDir($module->getPath($viewBaseDir, $smartyCfg['compileDir']));
 
         //
         $this->assign = [];
@@ -54,6 +54,7 @@ class TemplateController extends BaseController {
         $rg = "/\\.$this->defaultExtention$/";
         $tpl = (preg_match($rg, $tpl) > 0) ? $tpl : $tpl . '.' . $this->defaultExtention;
 
+        header('Content-type: text/html');
         $this->view->display($tpl);
 
     }

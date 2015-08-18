@@ -15,8 +15,8 @@ class Config
     protected $files = [];
 
     // Constructor method.
-    public function __construct(Array $options = []){
-
+    public function __construct(Array $options = [])
+    {
         // Default configurations
         $this->options["default"] = $options;
         // * means dynamic files that apply to any $optionSet.
@@ -56,8 +56,15 @@ class Config
             return $this->cacheSets[$setName];
         }
 
+        if(!array_key_exists($setName, $this->options) || !is_array($this->options[$setName])){
+            $this->options[$setName] = [];
+        }
+
         // Merge all sources.
-        $cfg = array_merge($this->knownOptions[$setName], $this->getOptionsFromFiles($setName));
+        $cfg = array_merge(
+            $this->knownOptions[$setName],
+            $this->getOptionsFromFiles($setName),
+            $this->options[$setName]);
 
         // Cache the set of options
         $this->cacheSets[$setName] = $cfg;
@@ -123,7 +130,10 @@ class Config
         } else if(is_string($key)){
             $this->options[$setName][$key] = $val;
         } else if(is_array($key)){
-            $this->options[$setName] = \array_merge($this->options[$setName], $key);
+            $this->options[$setName] = \array_merge(
+                empty($this->options[$setName]) ? [] : $this->options[$setName],
+                $key
+            );
         }
     }
 
