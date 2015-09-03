@@ -200,6 +200,20 @@ class Router {
         }
     }
 
+    public function prependRoute($method, $route, $handler)
+    {
+        if(array_key_exists($method, $this->routes)){
+            $this->routes[$method] = array($route => $handler) + $this->routes[$method];
+        }
+    }
+
+    public function appendRoute($method, $route, $handler)
+    {
+        if(array_key_exists($method, $this->routes)){
+            $this->routes[$method][$route] = $handler;
+        }
+    }
+
     public function getRoutes() {
         return $this->routes;
     }
