@@ -46,7 +46,7 @@ class Response
             echo $this->toJson();
         } elseif($this->contentType === 'application/xml'){
             echo $this->toXml();
-        } elseif($this->contentType === 'application/array') {
+        } elseif($this->contentType === 'application/array' || is_array($this->body) || is_object($this->body)) {
             print_r($this->body);
         } else {
             echo $this->body;
