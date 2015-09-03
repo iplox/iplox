@@ -2,6 +2,7 @@
 
 namespace Iplox;
 use Iplox\Http\Request;
+use Iplox\Http\Response;
 use Composer\Autoload\ClassLoader;
 
 class BaseModule extends AbstractModule {
@@ -18,12 +19,13 @@ class BaseModule extends AbstractModule {
         //Add options for a General set.
         $cfg->addKnownOptions([
             // General options.
-            'defaultContentType' => 'application/json',
+            'contentType' => 'text/html',
 
             // Submodules options
             'modules' => [],
             'modulesDir' => 'modules',
             'publicDir' => '../public',
+            'servePublicFiles' => true,
             'moduleClassName' => __CLASS__,
             'autoload' => false,
             'return' =>  false
@@ -39,6 +41,8 @@ class BaseModule extends AbstractModule {
             'charset' => 'utf8',
             'dbname' => 'IploxApp',
         ]);
+
+        $cfg->addKnownOptions('routes', array());
 
         parent::__construct($cfg);
 
@@ -67,41 +71,75 @@ class BaseModule extends AbstractModule {
 
     }
 
-    // If it has submodules, add the routes.
-    protected function addModuleRoutes()
+    //Initialize the module
+    public function init($uri = null, $baseUrl = null)
     {
-        $modules = $this->config->modules;
+        // The request for this module.
+        $req = new Request($uri);
+
+        // Detect the $baseUrl of this module.
+        if($baseUrl) {
+            $this->baseUrl = $baseUrl;
+        } else if($this->parent && $this->parent->baseUrl){
+            $route = $this->config->get('route');
+            $this->baseUrl = !empty($route) ? $this->parent->baseUrl . $route : $this->parent->baseUrl;
+        } else {
+            $this->baseUrl = '/';
+        }
+
+        // Load modules with autoload option enable.
+        $this->autoloadModules();
+
+        // Check if the requested uri match a file in one of the autoloaded modules.
+        $this->getFileFromChild($req->uri);
+
+        // Load the module routes.
+        $this->addModuleRoutes();
+
+        // Load routes from 'routes' config file.
+        $this->loadConfigRoutes();
+
+        $response = $this->router->check($req->uri);
+
+        // This module is set to return the result locally?
+        if($this->config->get('return') === true) {
+            return $response;
+        }
+
+        // If not response was provided, call the not found handler.
+        if ($response === false) {
+            $response = $this->notFoundHandler($req->uri);
+        }
+
+        // If the response isn't a Response instance, then wrap it appropriately.
+        if(! ($response instanceof Response)) {
+            $response = new Response(empty($response) ? [] : $response, $this->config->get('contentType'));
+        }
+
+        // Set header(), echo() the data, exit().
+        $response->end();
+    }
+
+    /**
+     * This allow the autoloading of submodules with the config option 'autoload' set to true.
+     * @return int
+     * @throws \Exception
+     */
+    protected function autoloadModules()
+    {
+        $modules = $this->config->get('modules');
         if(empty($modules)){
             return 0;
         }
-        $modCfg = [];
-        $routes = [];
-        $id = 0;
 
-        foreach($modules as $m){
-            if(!array_key_exists('default', $m) || !is_array($m['default'])){
-                $m['default'] = [];
-            }
-            $m['default']['id'] = $id++;
-
-            // This will ease the posterior modules autoloading process.
-            if(array_key_exists('autoload', $m['default']) && $m['default']['autoload'] === true) {
-                $this->modulesToLoad[$m['default']['id']] = $m;
-            }
-
-            if(!array_key_exists('route', $m['default']) && ! empty($m['default']['route'])) {
-                continue;
-            }
-
-            $modCfg[$m['default']['route']] = $m;
-            $routes[$m['default']['route']] = function () use (&$modCfg) {
-                call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
-            };
+        //
+        foreach($modules as $idx => $m) {
+            $m['default']['idx'] = $idx;
+            $this->loadModule($m, $idx);
         }
-        $this->router->prependRoutes($routes);
     }
 
-    protected function loadModule($modCfgArray, $modId)
+    protected function loadModule($modCfgArray, $modIdx)
     {
         $cfg = new Config($modCfgArray['default']);
         $ns = $cfg->get('namespace');
@@ -152,36 +190,87 @@ class BaseModule extends AbstractModule {
 
         // Instance the module.
         $mod = new $mClass($cfg, $this, $this->injections);
-        return $this->children[$modId] =  $mod;
+        return $this->children[$modIdx] =  $mod;
     }
 
-    //Initialize the module
-    public function init($uri = null)
+    /**
+     * Check if the request match a public static file inside the module.
+     * @return mixed
+     */
+    public function getFileFromChild($uri)
     {
-        $req = new Request($uri);
-        $this->baseUrl = ($this->parent and $this->parent->baseUrl) ?
-            $this->parent->baseUrl . $this->config->get('route') :
-            $this->config->get('route');
-
-
-        // Load the module routes.
-        $this->addModuleRoutes();
-
-        // This allow the autoloading of submodules with the config option 'autoload' set to true.
-        foreach($this->modulesToLoad as $mCfgArray){
-            $m = $this->loadModule($mCfgArray, $mCfgArray['default']['id']);
-
-            // Check if the request match a public static file inside the module.
-            if(method_exists($m, 'getFile') && array_key_exists('route', $mCfgArray['default'])){
-                $rgx = '/^(\/*)?'.preg_quote($mCfgArray['default']['route']).'(\/*)?/';
-                $fileRequest = preg_replace($rgx, '', $req->uri);
+        // $this->children has a ref of all the loaded children modules.
+        foreach($this->children as $m) {
+            if (method_exists($m, 'getFile') and $m->config->get('servePublicFiles') == true) {
+                $rgx = '/^(\/*)?' . preg_quote($m->config->get('route'), '/') . '(\/*)?/';
+                $fileRequest = preg_replace($rgx, '', $uri);
                 $f = $m->getFile($fileRequest);
-                if($f){
+                if ($f) {
                     return $f;
                 }
             }
         }
-        return $this->router->check($req->uri);
+        return false;
+    }
+
+    public function getFile($uri)
+    {
+        $filePath = static::getPath($this->config->get('directory'),
+                $this->config->get('publicDir')) .
+            DIRECTORY_SEPARATOR . $uri;
+        if(is_readable($filePath)){
+            $fi = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $fi->file($filePath);
+            return new Response(
+                readfile($filePath),
+                $mimeType
+            );
+        } else {
+            return false;
+        }
+    }
+
+    public function getPath($optBaseDir, $path)
+    {
+        if(! (
+            preg_match('/^\//', $path) > 0 ||
+            (strpos($path, ":") == 1 && preg_match('/^[a-zA-Z]/', $path) > 0)
+        )){
+            $path = $optBaseDir . DIRECTORY_SEPARATOR . $path;
+        }
+
+        $path = realpath($path);
+        return $path;
+    }
+
+    // If it has submodules, add the routes.
+    protected function addModuleRoutes()
+    {
+        $modules = $this->config->modules;
+        if(empty($modules)){
+            return 0;
+        }
+        $modCfg = [];
+        $routes = [];
+        $id = 0;
+
+        foreach($modules as $m){
+            if(!array_key_exists('default', $m) || !is_array($m['default'])){
+                $m['default'] = [];
+            }
+            $m['default']['id'] = $id++;
+
+            if(!array_key_exists('route', $m['default']) && ! empty($m['default']['route'])) {
+                continue;
+            }
+            $baseRoute = $m['default']['route'];
+            $realRoute = preg_replace('/\/*/', '/', $baseRoute . '/{*params}');
+            $modCfg[$realRoute] = $m;
+            $routes[$m['default']['route']] = function () use (&$modCfg) {
+                call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
+            };
+        }
+        $this->router->prependRoutes($routes);
     }
 
 
@@ -203,28 +292,42 @@ class BaseModule extends AbstractModule {
         $mod->init($reqUri);
     }
 
-
-    public function getFile($uri)
+    protected function loadConfigRoutes()
     {
-        $filePath = static::getPath($this->config->get('directory'),
-            $this->config->get('publicDir')) .
-            DIRECTORY_SEPARATOR . $uri;
-        if(is_readable($filePath)){
-            $fi = new \finfo(FILEINFO_MIME_TYPE);
-            $mimeType = $fi->file($filePath);
-            header('Content-type: '.$mimeType);
-            return readfile($filePath);
-        } else {
-            return false;
+        $routeMaps= $this->config->getSet('routes');
+        foreach($routeMaps as $methodRoute => $handler){
+            $methodRoute  = trim($methodRoute, " \t");
+            $arr = preg_split('/\ /', $methodRoute);
+            if(count($arr) == 1){
+                $route = $arr[0];
+                $method = 'ALL';
+            } else if(count($arr) == 2) {
+                $method = $arr[0];
+                $route = $arr[1];
+            }
+
+            $handlerMethod = $this->getValidHandler($handler);
+
+            if($handlerMethod === false){
+                throw new \Exception("The $handler mapped to the method-route $methodRoute is not callable.");
+            }
+
+            $this->router->prependRoute($method, $route, function() use($handlerMethod){
+                return call_user_func($handlerMethod, $this->config, $this);
+            });
         }
     }
 
-    public function getPath($optBaseDir, $path)
+    public function getValidHandler($handler)
     {
-        if(preg_match('/^\//', $path) === 0){
-            $path = $optBaseDir . DIRECTORY_SEPARATOR . $path;
+        if (is_callable($handler)) {
+            return $handler;
+        } elseif(is_string($handler) && preg_match('/^[\w\\\]*->\w*$/', $handler) > 0) {
+            $handler = preg_split('/\->/', $handler);
+            if(is_callable($handler)){
+                return $handler;
+            }
         }
-        $path = realpath($path);
-        return $path;
+        return false;
     }
 }
