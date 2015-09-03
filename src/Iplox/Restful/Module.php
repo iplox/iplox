@@ -25,7 +25,7 @@ class Module extends BaseModule
             'defaultController' => 'Controllers\\Index',
             'defaultMethod' => 'index',
             'moduleClassName' => __CLASS__,
-            'defaultContentType' => 'application/json'
+            'contentType' => 'application/json'
         ]);
 
         // Options for mapping resources to controllers.
@@ -81,7 +81,7 @@ class Module extends BaseModule
 
         // If the response isn't a Response instance, then wrap it appropriately.
         if(! ($response instanceof Response)) {
-            return new Response(empty($response) ? [] : $response, $this->config->get('defaultContentType'));
+            return new Response(empty($response) ? [] : $response, $this->config->get('contentType'));
         }
 
         // Set header(), echo() the data, exit().
