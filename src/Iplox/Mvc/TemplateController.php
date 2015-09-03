@@ -54,8 +54,7 @@ class TemplateController extends BaseController {
         $rg = "/\\.$this->defaultExtention$/";
         $tpl = (preg_match($rg, $tpl) > 0) ? $tpl : $tpl . '.' . $this->defaultExtention;
 
-        header('Content-type: text/html');
-        $this->view->display($tpl);
+        return $this->view->fetch($tpl);
 
     }
 
