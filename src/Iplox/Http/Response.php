@@ -42,12 +42,12 @@ class Response
     {
         header('Content-type: '.$this->contentType);
         http_response_code($this->statusCode);
-        if($this->contentType = 'application/json') {
+        if($this->contentType === 'application/json') {
             echo $this->toJson();
-        } elseif($this->contentType = 'application/xml'){
+        } elseif($this->contentType === 'application/xml'){
             echo $this->toXml();
-        } elseif($this->contentType = 'application/array') {
-            return $this->data;
+        } elseif($this->contentType === 'application/array') {
+            print_r($this->body);
         } else {
             echo $this->body;
         }
