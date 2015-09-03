@@ -313,10 +313,10 @@ class BaseModule extends AbstractModule {
             }
 
             $this->router->prependRoute($method, $route, function() use($handlerMethod){
-                return call_user_func([
+                return call_user_func_array([
                     new $handlerMethod[0]($this->config, $this),
                     $handlerMethod[1]
-                ]);
+                ], func_get_args());
             });
         }
     }
