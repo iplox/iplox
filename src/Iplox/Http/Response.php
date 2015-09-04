@@ -57,15 +57,18 @@ class Response
     public static function sessionRedirect($location)
     {
         header("Location: $location", true, 302);
+        exit();
     }
 
     public static function temporaryRedirect($location)
     {
         header("Location: $location", true, 307);
+        exit();
     }
 
     public static function permanentRedirect($location)
     {
         header("Location: $location", true, 301);
+        exit();
     }
 }

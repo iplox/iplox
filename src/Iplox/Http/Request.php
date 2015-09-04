@@ -42,6 +42,8 @@ class Request
             return $this->uri;
         } else if ($name === 'params') {
             return $this->params;
+        } else if($name === 'fullUrl') {
+            return '//'.$this->hostname . $this->uri;
         }
     }
 
