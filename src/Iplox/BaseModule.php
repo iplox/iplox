@@ -218,7 +218,7 @@ class BaseModule extends AbstractModule {
         $filePath = static::getPath($this->config->get('directory'),
                 $this->config->get('publicDir')) .
             DIRECTORY_SEPARATOR . $uri;
-        if(is_readable($filePath)){
+        if(is_readable($filePath) and is_file($filePath)){
             $fi = new \finfo(FILEINFO_MIME_TYPE);
             $mimeType = $fi->file($filePath);
             return new Response(
@@ -294,7 +294,7 @@ class BaseModule extends AbstractModule {
 
     protected function loadConfigRoutes()
     {
-        $routeMaps= $this->config->getSet('routes');
+        $routeMaps= array_reverse($this->config->getSet('routes'));
         foreach($routeMaps as $methodRoute => $handler){
             $methodRoute  = trim($methodRoute, " \t");
             $arr = preg_split('/\ /', $methodRoute);
@@ -312,12 +312,12 @@ class BaseModule extends AbstractModule {
                 throw new \Exception("The $handler mapped to the method-route $methodRoute is not callable.");
             }
 
-            $this->router->prependRoute($method, $route, function() use($handlerMethod){
+            $this->router->prependRoute($route, function() use($handlerMethod){
                 return call_user_func_array([
                     new $handlerMethod[0]($this->config, $this),
                     $handlerMethod[1]
                 ], func_get_args());
-            });
+            }, $method);
         }
     }
 

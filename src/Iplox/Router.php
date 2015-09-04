@@ -10,11 +10,13 @@ class Router {
     protected $request;
     protected $requestMethod;
     protected $filters;
+    protected $routeCount;
 
     function __construct() {
-        $this->resetRoutes();
+        $this->routes = array();
         $this->filters = array();
         $this->goHandlers = array();
+        $this->routeCount = 0;
     }
 
     /**** Routes ****/
@@ -37,17 +39,14 @@ class Router {
             $method = $method ? $method : $_SERVER['REQUEST_METHOD'];
         }
         $req = empty($req) ? '/' : $req;
-        //
-        if(in_array($method, $this->routes)){
-            throw new Exception('Not valid methodName was specified. Expected one of these: GET, POST, PUT, DELETE, ALL');
-        } else if($method !== 'ALL') {
-            $routeList = array_merge($this->routes[$method], $this->routes['ALL']);
-        } else {
-            $routeList = $this->routes[$method];
-        }
+
+        $routeList = $this->getRoutes($method);
 
         //
-        foreach($routeList as $endpoint => $callback) {
+        foreach($routeList as $r) {
+            $endpoint = $r[0];
+            $callback =  $r[1];
+
             //Esta es la ruta?
             $matches = $this->checkRoute($endpoint, $req);
             if(is_array($matches)) {
@@ -122,15 +121,15 @@ class Router {
                 '/(\*\w*\?)|(\{\*\w*\}\?)/',
                 '/(\*\w*)|(\{\*\w*\})/'
             ], [
-                '',
-                '\/',
-                '?($1)?',
-                '$1',
-                '<segment_opt>',
-                '<segment>',
-                '<glob_opt>',
-                '<glob>'
-            ],
+            '',
+            '\/',
+            '?($1)?',
+            '$1',
+            '<segment_opt>',
+            '<segment>',
+            '<glob_opt>',
+            '<glob>'
+        ],
             $route
         );
 
@@ -146,8 +145,8 @@ class Router {
                 '?(\/[\w\-\/]+)?',
                 '([\w\-\/]+)',
             ],
-            $rgxR
-        ) . '$/';
+                $rgxR
+            ) . '$/';
 
         $req = '/' . preg_replace(['/^\/*/', '/\/$/', '/\/+/'], ['', '', '/'], $req);
 
@@ -179,45 +178,53 @@ class Router {
     }
 
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
-    public function appendRoutes($routes=array(), $method="ALL") {
-        if(array_key_exists($method, $this->routes)) {
-            $this->routes[$method] = array_merge($this->routes[$method], $routes);
+    public function appendRoutes($routes=array(), $method="any") {
+        if($method !== 'any' and ! $this->isMethod($method)){
+            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+        }
+        foreach($routes as $route => $handler){
+            array_push($this->routes, array($route, $handler, $method));
         }
     }
 
     //Agrega rutas al inicio del arreglo de rutas.
-    public function prependRoutes($routes=array(), $method="ALL") {
-        if(array_key_exists($method, $this->routes)) {
-            $tmpArray = array();
-            foreach($routes as $k=> $v) {
-                if(array_key_exists($k, $this->routes[$method])) {
-                    $this->routes[$method] = $v;
-                } else {
-                    $tmpArray[$k] = $v;
-                }
-                $this->routes[$method] = array_merge($tmpArray, $this->routes[$method]);
+    public function prependRoutes($routes=array(), $method="any") {
+        if($method !== 'any' and ! $this->isMethod($method)){
+            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+        }
+        foreach($routes as $route => $handler){
+            array_unshift($this->routes, array($route, $handler, $method));
+        }
+    }
+
+    public function prependRoute($route, $handler, $method = 'any')
+    {
+        if($method !== 'any' and ! $this->isMethod($method)){
+            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+        }
+        array_unshift($this->routes, array($route, $handler, $method));
+    }
+
+    public function appendRoute($route, $handler, $method = 'any')
+    {
+        if($method !== 'any' and ! $this->isMethod($method)){
+            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+        }
+        array_push($this->routes, array($route, $handler, $method));
+    }
+
+    public function getRoutes($method)
+    {
+        if(! $this->isMethod($method)){
+            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+        }
+        $routes = [];
+        foreach ($this->routes as $r) {
+            if ($r[2] == strtolower($method) || $r[2] == 'any') {
+                array_push($routes, $r);
             }
         }
-    }
-
-    public function prependRoute($method, $route, $handler)
-    {
-        $method = strtoupper($method);
-        if(array_key_exists($method, $this->routes)){
-            $this->routes[$method] = array($route => $handler) + $this->routes[$method];
-        }
-    }
-
-    public function appendRoute($method, $route, $handler)
-    {
-        $method = strtoupper($method);
-        if(array_key_exists($method, $this->routes)){
-            $this->routes[$method][$route] = $handler;
-        }
-    }
-
-    public function getRoutes() {
-        return $this->routes;
+        return $routes;
     }
 
 
@@ -261,17 +268,19 @@ class Router {
 
     //Clear routes. If a method is provided clear only that specifics.
     public function resetRoutes($method = null) {
-        $resetValues =  [
-            'GET'=>[],
-            'POST'=>[],
-            'DELETE'=>[],
-            'PUT'=>[],
-            'ALL'=>[]
-        ];
-        if(!is_null($method) && array_key_exists(strtoupper($method), $resetValues)) {
-            $this->routes[strtoupper($method)] = [];
-        } else {
-            $this->routes = $resetValues;
+        $routes = [];
+        if($this->isMethod($method)) {
+            foreach ($this->routes as $r) {
+                if ($r[2] !== strtolower($method)) {
+                    array_push($routes, $r);
+                }
+            }
         }
+        $this->routes = $routes;
+    }
+
+    public function isMethod($method)
+    {
+        return in_array(strtolower($method), ['get', 'post', 'update', 'delete']) ? true : false;
     }
 }
