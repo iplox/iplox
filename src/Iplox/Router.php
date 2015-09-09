@@ -180,7 +180,7 @@ class Router {
     //Agrega nuevas rutas a resolver para un método en particular (GET, POST, PUT o DELETE).
     public function appendRoutes($routes=array(), $method="any") {
         if($method !== 'any' and ! $this->isMethod($method)){
-            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+            throw new \Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
         }
         foreach($routes as $route => $handler){
             array_push($this->routes, array($route, $handler, $method));
@@ -190,7 +190,7 @@ class Router {
     //Agrega rutas al inicio del arreglo de rutas.
     public function prependRoutes($routes=array(), $method="any") {
         if($method !== 'any' and ! $this->isMethod($method)){
-            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+            throw new \Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
         }
         foreach($routes as $route => $handler){
             array_unshift($this->routes, array($route, $handler, $method));
@@ -200,7 +200,7 @@ class Router {
     public function prependRoute($route, $handler, $method = 'any')
     {
         if($method !== 'any' and ! $this->isMethod($method)){
-            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+            throw new \Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
         }
         array_unshift($this->routes, array($route, $handler, $method));
     }
@@ -208,7 +208,7 @@ class Router {
     public function appendRoute($route, $handler, $method = 'any')
     {
         if($method !== 'any' and ! $this->isMethod($method)){
-            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+            throw new \Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
         }
         array_push($this->routes, array($route, $handler, $method));
     }
@@ -216,7 +216,7 @@ class Router {
     public function getRoutes($method)
     {
         if(! $this->isMethod($method)){
-            throw new Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
+            throw new \Exception('Not valid $method was specified. Expected one of these: get, post, put, delete, any');
         }
         $routes = [];
         foreach ($this->routes as $r) {

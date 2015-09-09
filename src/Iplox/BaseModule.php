@@ -300,7 +300,7 @@ class BaseModule extends AbstractModule {
             $arr = preg_split('/\ /', $methodRoute);
             if(count($arr) == 1){
                 $route = $arr[0];
-                $method = 'ALL';
+                $method = 'any';
             } else if(count($arr) == 2) {
                 $method = $arr[0];
                 $route = $arr[1];
