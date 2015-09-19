@@ -10,7 +10,6 @@ class BaseModule extends AbstractModule {
     protected $router;
     protected $children;
     protected $parent;
-    protected $modulesToLoad;
     protected $injections;
     protected $baseUrl;
 
@@ -51,7 +50,6 @@ class BaseModule extends AbstractModule {
 
         // The children modules
         $this->children = [];
-        $this->modulesToLoad = [];
 
         // Pass this objects to the children submodules
         $this->injections = empty($injections) ? [] : $injections;

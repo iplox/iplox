@@ -41,7 +41,7 @@ abstract class AbstractModule {
 		}, '*');
 
 		// The 'Default' optionSet was already cached.
-		// So, we need to refresh the object so it loads the options from the files.
+		// So, we need to refresh the object so it loads the options from the config files.
 		$cfg->refreshCache();
 
 		$this->config = $cfg;
