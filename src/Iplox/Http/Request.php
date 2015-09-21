@@ -8,12 +8,14 @@ class Request
     protected $uri;
     protected $hostname;
     protected $params;
+    protected $method;
 
-    public function __construct($uri = '/', $params = '', $hostname = null)
+    public function __construct($uri = '/', $params = '', $hostname = null, $httpMethod = null)
     {
         $this->uri = empty($uri) ? $this->removeQueryString($_SERVER['REQUEST_URI']) : $uri;
         $this->params = $params;
         $this->hostname = empty($hostname) ? $_SERVER['SERVER_NAME'] : $hostname;
+        $this->method = strtoupper(empty($httpMethod) ? $_SERVER['REQUEST_METHOD'] : $httpMethod);
     }
 
     public static function getCurrent()
@@ -35,7 +37,7 @@ class Request
     public function __get($name)
     {
         if($name === 'method'){
-            return $_SERVER['REQUEST_METHOD'];
+            return $this->method;
         } else if($name === 'hostname') {
             return $this->hostname;
         } else if($name === 'uri') {
@@ -50,7 +52,7 @@ class Request
     /*****  HTTP Method Verification *****/
     //Devuelve true si el método solicitado es GET
     public function isGet() {
-        if($_SERVER['REQUEST_METHOD'] === 'GET') {
+        if($this->method === 'GET') {
             return true;
         } else {
             return false;

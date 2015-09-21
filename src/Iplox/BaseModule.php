@@ -12,6 +12,7 @@ class BaseModule extends AbstractModule {
     protected $parent;
     protected $injections;
     protected $baseUrl;
+    protected $middleWares = [];
 
     public function __construct(Config $cfg, AbstractModule $parent = null, Array $injections = null)
     {
@@ -70,10 +71,12 @@ class BaseModule extends AbstractModule {
     }
 
     //Initialize the module
-    public function init($uri = null, $baseUrl = null)
+    public function init($req = null, $baseUrl = null)
     {
         // The request for this module.
-        $req = new Request($uri);
+        if(! ($req instanceof Request)){
+            $req = new Request($req);
+        }
 
         // Detect the $baseUrl of this module.
         if($baseUrl) {
@@ -97,7 +100,7 @@ class BaseModule extends AbstractModule {
         // Load routes from 'routes' config file.
         $this->loadConfigRoutes();
 
-        $response = $this->router->check($req->uri);
+        $response = $this->router->check($req->uri, $req->method);
 
         // This module is set to return the result locally?
         if($this->config->get('return') === true) {
@@ -302,21 +305,97 @@ class BaseModule extends AbstractModule {
             } else if(count($arr) == 2) {
                 $method = $arr[0];
                 $route = $arr[1];
+            } else {
+                throw new \Exception("Invalid route $methodRoute");
             }
 
-            $handlerMethod = $this->getValidHandler($handler);
+            $afterMiddleware = [];
+            $beforeMiddleware = [];
+            if(is_array($handler) && array_key_exists('handler', $handler)){
+                $handlerMethod = $this->getValidHandler($handler['handler']);
+
+                if(array_key_exists('before', $handler)){
+                    foreach($handler['before'] as $mw){
+                        if($mwh = $this->getMiddleWare($mw) || $mwh = $this->getValidHandler($mw)){
+                            array_push($beforeMiddleware, $mwh);
+                        } else {
+                            throw new \Exception('Invalid before middleware. You must provide an existing handler');
+                        }
+                    }
+                }
+
+                if(array_key_exists('after', $handler)){
+                    foreach($handler['after'] as $mw){
+                        if($mwh = $this->getValidHandler($mw)){
+                            array_push($afterMiddleware, $mwh);
+                        } else {
+                            throw new \Exception('Invalid after middleware. You must provide an existing handler');
+                        }
+                    }
+                }
+            } else {
+                $handlerMethod = $this->getValidHandler($handler);
+            }
 
             if($handlerMethod === false){
                 throw new \Exception("The $handler mapped to the method-route $methodRoute is not callable.");
             }
 
-            $this->router->prependRoute($route, function() use($handlerMethod){
-                return call_user_func_array([
+            $this->router->prependRoute($route, function() use($handlerMethod, $beforeMiddleware, $afterMiddleware){
+
+                $req = new Request();
+                $res = new Response('','');
+
+                // Before Middlewares
+                $bmwCount = count($beforeMiddleware);
+                if($bmwCount > 0){
+                    $beforeCaller = function () use (&$beforeCaller, &$nextArray, &$i, &$req, &$res){
+                        if($i > 0){
+                            $i--;
+                            return call_user_func($nextArray[$i], $beforeCaller, $req, $res);
+                        }
+                    };
+                    $beforeCaller();
+                }
+
+                // Handling Request
+                $returnedData = call_user_func_array([
                     new $handlerMethod[0]($this->config, $this),
                     $handlerMethod[1]
                 ], func_get_args());
+
+
+                // After Middlewares
+                $amwCount = count($afterMiddleware);
+                if($amwCount > 0) {
+                    $afterCaller = function () use (&$afterCaller, &$nextArray, &$i, &$req, &$res, &$returnedData) {
+                        if ($i > 0) {
+                            $i--;
+                            return call_user_func($nextArray[$i], $afterCaller, $req, $res);
+                        }
+                    };
+                    $afterCaller();
+                }
+                return $returnedData;
             }, $method);
         }
+    }
+
+    public function setMiddleWare($mwName, $mw)
+    {
+        if($mwHandler = $this->getValidHandler($mw)){
+            $this->middleWares[$mwName] = $mwHandler;
+        } else {
+            throw new \Exception("Invalid middleware handler. A valid handler is expected.");
+        }
+    }
+
+    public function getMiddleWare($mwName)
+    {
+        if(is_string($mwName) && array_key_exists($mwName, $this->middleWares)){
+            return $this->middleWares[$mwName];
+        }
+        return false;
     }
 
     public function getValidHandler($handler)

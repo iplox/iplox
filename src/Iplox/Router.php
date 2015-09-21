@@ -281,6 +281,6 @@ class Router {
 
     public function isMethod($method)
     {
-        return in_array(strtolower($method), ['get', 'post', 'update', 'delete']) ? true : false;
+        return in_array(strtolower($method), ['get', 'post', 'put', 'delete']) ? true : false;
     }
 }
