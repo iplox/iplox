@@ -2,11 +2,11 @@
 # Iplox Framework
 -----------
 
-Iplox is a small web application framework for fast development of powerful php applications. It facillitates and encorouge to implement MVC and REST architectural styles. 
+Iplox is a small web application framework for fast development of powerful **PHP** applications. It facillitates and encorouge to implement **MVC** and **REST** architectural styles. 
 
-It Gives the appropiate solution for those who want to code with full control over their code but following well-known conventions and architectures.
+It Gives the appropiate solution for those who want to code with full control over their code but following *well-known conventions* and architectures.
 
 ##Disclaimer##
-This project is currently under development. Feel free to use it, but it's not recommended for production yet.
+This project is *currently under development*. Feel free to use it, but it's not recommended for production yet.
 
 
