@@ -10,12 +10,17 @@ class Request
     protected $params;
     protected $method;
 
-    public function __construct($uri = '/', $params = '', $hostname = null, $httpMethod = null)
+    public function __construct($uri = '/', $params = '', $hostname = null, $httpMethod = null, $body = null)
     {
         $this->uri = empty($uri) ? $this->removeQueryString($_SERVER['REQUEST_URI']) : $uri;
-        $this->params = $params;
+        $this->params = $params or $_REQUEST;
         $this->hostname = empty($hostname) ? $_SERVER['SERVER_NAME'] : $hostname;
         $this->method = strtoupper(empty($httpMethod) ? $_SERVER['REQUEST_METHOD'] : $httpMethod);
+        $this->body = !empty($body) && !is_array($body) ? $body :
+            ($_POST ? $_POST : json_decode(file_get_contents('php://input'), true));
+        if(empty($this->body)) {
+            $this->body = [];
+        }
     }
 
     public static function getCurrent()
@@ -61,7 +66,7 @@ class Request
 
     //Devuelve true si el metodo solicitado es POST
     public function isPost() {
-        if($_SERVER['REQUEST_METHOD'] === 'POST') {
+        if($this->method === 'POST') {
             return true;
         } else {
             return false;
@@ -70,7 +75,7 @@ class Request
 
     //Devuelve tru si el metodo solicitado es PUT
     public function isPut() {
-        if($_SERVER['REQUEST_METHOD'] === 'PUT') {
+        if($this->method === 'PUT') {
             return true;
         } else {
             return false;
@@ -79,7 +84,7 @@ class Request
 
     //Devuelve tru si el metodo solicitado es DELETE
     public function isDelete() {
-        if($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+        if($this->method === 'DELETE') {
             return true;
         } else {
             return false;

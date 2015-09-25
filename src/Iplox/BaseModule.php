@@ -75,7 +75,7 @@ class BaseModule extends AbstractModule {
     {
         // The request for this module.
         if(! ($req instanceof Request)){
-            $req = new Request($req);
+            $req = $this->request = new Request($req);
         }
 
         // Detect the $baseUrl of this module.
@@ -311,12 +311,12 @@ class BaseModule extends AbstractModule {
 
             $afterMiddleware = [];
             $beforeMiddleware = [];
+
             if(is_array($handler) && array_key_exists('handler', $handler)){
                 $handlerMethod = $this->getValidHandler($handler['handler']);
-
                 if(array_key_exists('before', $handler)){
                     foreach($handler['before'] as $mw){
-                        if($mwh = $this->getMiddleWare($mw) || $mwh = $this->getValidHandler($mw)){
+                        if($mwh = $this->getMiddleWare($mw) or $mwh = $this->getValidHandler($mw)){
                             array_push($beforeMiddleware, $mwh);
                         } else {
                             throw new \Exception('Invalid before middleware. You must provide an existing handler');
@@ -338,24 +338,27 @@ class BaseModule extends AbstractModule {
             }
 
             if($handlerMethod === false){
-                throw new \Exception("The $handler mapped to the method-route $methodRoute is not callable.");
+                throw new \Exception('The $handler mapped to the method-route $methodRoute is not callable.');
             }
 
             $this->router->prependRoute($route, function() use($handlerMethod, $beforeMiddleware, $afterMiddleware){
 
-                $req = new Request();
-                $res = new Response('','');
+                $req = $this->request;
+                $res = null;
 
                 // Before Middlewares
                 $bmwCount = count($beforeMiddleware);
                 if($bmwCount > 0){
-                    $beforeCaller = function () use (&$beforeCaller, &$nextArray, &$i, &$req, &$res){
-                        if($i > 0){
-                            $i--;
-                            return call_user_func($nextArray[$i], $beforeCaller, $req, $res);
+                    $beforeCaller = function () use (&$beforeCaller, &$beforeMiddleware, &$bmwCount, &$req, &$res){
+                        if($bmwCount > 0){
+                            $bmwCount--;
+                            return call_user_func($beforeMiddleware[$bmwCount], $beforeCaller, $req, $res);
                         }
                     };
                     $beforeCaller();
+                }
+                if ($res instanceof Response){
+                    return $res;
                 }
 
                 // Handling Request
@@ -368,7 +371,7 @@ class BaseModule extends AbstractModule {
                 // After Middlewares
                 $amwCount = count($afterMiddleware);
                 if($amwCount > 0) {
-                    $afterCaller = function () use (&$afterCaller, &$nextArray, &$i, &$req, &$res, &$returnedData) {
+                    $afterCaller = function () use (&$afterCaller, &$nextArray, &$i, &$returnedData, &$req, &$res) {
                         if ($i > 0) {
                             $i--;
                             return call_user_func($nextArray[$i], $afterCaller, $req, $res);
@@ -376,7 +379,12 @@ class BaseModule extends AbstractModule {
                     };
                     $afterCaller();
                 }
-                return $returnedData;
+
+                if ($res instanceof Response){
+                    return $res;
+                } else {
+                    return $returnedData;
+                }
             }, $method);
         }
     }
