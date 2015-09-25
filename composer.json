@@ -1,22 +1,17 @@
 {
-   "name":"iplox/iploxphp",
+   "name":"iplox/iplox",
 	"authors": [
         {
             "name": "Jr. Stanley Zapata",
-            "email": "jzapata@stanlix.com"
+            "email": "jrzapata@hotmail.com"
         }
-	],
+   ],
    "config": {
       "vendor-dir": "vendor/"
    },
-   "minimun-stability": "dev",
-   "require-dev": {
-     "phpunit/phpunit": "4.5.*",
-     "phpdocumentor/phpdocumentor": "2.8.*"
-   },
    "require": {},
    "autoload": {
-   	  "psr-0": {
+   	"psr-0": {
         "Iplox\\": "src/"
       }
    },
