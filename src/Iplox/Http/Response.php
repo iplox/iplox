@@ -71,4 +71,10 @@ class Response
         header("Location: $location", true, 301);
         exit();
     }
+
+    public static function redirect($location)
+    {
+        header("Location: $location");
+        exit();
+    }
 }
