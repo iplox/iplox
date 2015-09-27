@@ -9,7 +9,7 @@ class Request
     protected $hostname;
     protected $params;
     protected $method;
-
+    protected $extra;
     public function __construct($uri = '/', Array $params = [], $hostname = null, $httpMethod = null, $body = null)
     {
         $this->uri = empty($uri) ? $this->removeQueryString($_SERVER['REQUEST_URI']) : $uri;
@@ -21,6 +21,7 @@ class Request
         if(empty($this->body)) {
             $this->body = [];
         }
+        $this->extra = new \stdClass();
     }
 
     public static function getCurrent()
@@ -50,6 +51,8 @@ class Request
             return $this->params;
         } else if($name === 'fullUrl') {
             return '//'.$this->hostname . $this->uri;
+        } else if($name === 'extra') {
+            return $this->extra;
         }
     }
 
