@@ -344,21 +344,21 @@ class BaseModule extends AbstractModule {
             $this->router->prependRoute($route, function() use($handlerMethod, $beforeMiddleware, $afterMiddleware){
 
                 $req = $this->request;
-                $res = null;
+                $res = new Response();
 
                 // Before Middlewares
                 $bmwCount = count($beforeMiddleware);
                 if($bmwCount > 0){
-                    $beforeCaller = function () use (&$beforeCaller, &$beforeMiddleware, &$bmwCount, &$req, &$res){
-                        if($bmwCount > 0){
-                            $bmwCount--;
-                            return call_user_func($beforeMiddleware[$bmwCount], $beforeCaller, $req, $res);
+                    $bmwCounter = 0;
+                    $beforeCaller = function () use (&$beforeCaller, &$beforeMiddleware, &$bmwCounter, &$bmwCount, &$req, &$res){
+                        if($bmwCounter < $bmwCount){
+                            $bmwCounter++;
+                            return call_user_func($beforeMiddleware[$bmwCounter-1], $beforeCaller, $req, $res);
                         }
                     };
-                    $beforeCaller();
-                }
-                if ($res instanceof Response){
-                    return $res;
+                    if($beforeCaller()){
+                        return $res;
+                    }
                 }
 
                 // Handling Request
@@ -371,20 +371,20 @@ class BaseModule extends AbstractModule {
                 // After Middlewares
                 $amwCount = count($afterMiddleware);
                 if($amwCount > 0) {
-                    $afterCaller = function () use (&$afterCaller, &$nextArray, &$i, &$returnedData, &$req, &$res) {
-                        if ($i > 0) {
-                            $i--;
-                            return call_user_func($nextArray[$i], $afterCaller, $req, $res);
+                    $amwCounter = 0;
+                    $afterCaller = function () use (&$afterCaller, &$nextArray, &$amwCounter, &$amwCount, &$returnedData, &$req, &$res) {
+                        if ($amwCounter < $amwCount) {
+                            $amwCount++;
+                            return call_user_func($nextArray[$amwCount - 1], $afterCaller, $req, $res);
                         }
                     };
-                    $afterCaller();
+
+                    if($afterCaller()){
+                        return $res;
+                    }
                 }
 
-                if ($res instanceof Response){
-                    return $res;
-                } else {
-                    return $returnedData;
-                }
+                return $returnedData;
             }, $method);
         }
     }
