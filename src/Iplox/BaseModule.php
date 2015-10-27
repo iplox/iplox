@@ -268,7 +268,7 @@ class BaseModule extends AbstractModule {
             $realRoute = preg_replace('/\/*/', '/', $baseRoute . '/{*params}');
             $modCfg[$realRoute] = $m;
             $routes[$m['default']['route']] = function () use (&$modCfg) {
-                call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
+                call_user_func([$this, 'callModule'], $modCfg[$this->router->route] . '/{*params}');
             };
         }
         $this->router->prependRoutes($routes);
