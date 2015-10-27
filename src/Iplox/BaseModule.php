@@ -264,16 +264,15 @@ class BaseModule extends AbstractModule {
             if(!array_key_exists('route', $m['default']) && ! empty($m['default']['route'])) {
                 continue;
             }
-            $baseRoute = $m['default']['route'];
-            $realRoute = preg_replace('/\/*/', '/', $baseRoute . '/{*params}');
+
+            $realRoute = preg_replace('/\/{2,}/', '/', $m['default']['route'] . '/{*params}?');
             $modCfg[$realRoute] = $m;
-            $routes[$m['default']['route']] = function () use (&$modCfg) {
+            $routes[$realRoute] = function () use (&$modCfg) {
                 call_user_func([$this, 'callModule'], $modCfg[$this->router->route]);
             };
         }
         $this->router->prependRoutes($routes);
     }
-
 
     /**
      * Call the module.

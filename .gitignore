@@ -7,5 +7,5 @@ vendor/
 composer.lock
 
 # InteliJ IDE file and folder
-iploxphp.iml
+*.iml
 .idea/
