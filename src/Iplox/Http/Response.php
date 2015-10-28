@@ -10,7 +10,7 @@ class Response
     public $body;
     public $statusCode;
 
-    public function __construct($body, $contentType, $statusCode = StatusCode::OK)
+    public function __construct($body = '', $contentType = 'text/html', $statusCode = StatusCode::OK)
     {
         $this->body = $body;
         $this->statusCode = $statusCode;
@@ -69,6 +69,12 @@ class Response
     public static function permanentRedirect($location)
     {
         header("Location: $location", true, 301);
+        exit();
+    }
+
+    public static function redirect($location)
+    {
+        header("Location: $location");
         exit();
     }
 }
