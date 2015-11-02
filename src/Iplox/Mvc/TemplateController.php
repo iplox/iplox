@@ -19,13 +19,22 @@ class TemplateController extends BaseController {
 
         $this->view = new Smarty();
 
-        $viewBaseDir = $module->getPath($cfg->get('directory'), $cfg->get('viewsDir')) . DIRECTORY_SEPARATOR;
+        $cfg->addKnownOptions('default', [
+            'viewsDir' => 'views',
+        ]);
+        $cfg->refreshCache();
+
+        $viewBaseDir = $module->getPath(
+                $cfg->get('directory'),
+                $cfg->get('viewsDir')) . DIRECTORY_SEPARATOR;
+
         $cfg->addKnownOptions('smarty', [
             'pluginsDir' => $viewBaseDir .'plugins',
             'templateDir' => $viewBaseDir .'templates',
             'cacheDir' => $viewBaseDir .'cache',
             'compileDir' => $viewBaseDir .'compiles',
         ]);
+        $cfg->refreshCache('smarty');
 
         // Load the entire smarty optionSet 
         $smartyCfg = $cfg->getSet('smarty');
