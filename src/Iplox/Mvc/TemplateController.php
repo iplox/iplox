@@ -49,7 +49,7 @@ class TemplateController extends BaseController {
         $this->assign = [];
     }
 
-    public function show($tpl, $data=[]){
+    public function show($tpl = null, $data=[]){
         if(! isset($this->vars)){
             $this->vars = [];
         }
