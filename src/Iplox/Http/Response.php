@@ -9,12 +9,14 @@ class Response
     public $contentType;
     public $body;
     public $statusCode;
+    public $headers;
 
-    public function __construct($body = '', $contentType = 'text/html', $statusCode = StatusCode::OK)
+    public function __construct($body = '', $contentType = 'text/html', $statusCode = StatusCode::OK, $headers = [])
     {
         $this->body = $body;
         $this->statusCode = $statusCode;
         $this->contentType = $contentType;
+        $this->headers = $headers;
     }
 
     public static function getCurrent()
@@ -40,6 +42,9 @@ class Response
 
     public function end()
     {
+        foreach($this->headers as $hK => $hV){
+            header("$hK: $hV");
+        }
         header('Content-type: '.$this->contentType);
         http_response_code($this->statusCode);
         if($this->contentType === 'application/json') {
