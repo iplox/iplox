@@ -7,14 +7,16 @@ class Request
     protected static $current;
     protected $uri;
     protected $hostname;
+    protected $port;
     protected $params;
     protected $method;
     protected $extra;
-    public function __construct($uri = '/', Array $params = [], $hostname = null, $httpMethod = null, $body = null)
+    public function __construct($uri = '/', Array $params = [], $hostname = null, $port = null, $httpMethod = null, $body = null)
     {
         $this->uri = empty($uri) ? $this->removeQueryString($_SERVER['REQUEST_URI']) : $uri;
         $this->params = empty($params) ? $_REQUEST : $params;
         $this->hostname = empty($hostname) ? $_SERVER['SERVER_NAME'] : $hostname;
+        $this->port = empty($port) ? $_SERVER['SERVER_PORT'] : $port;
         $this->method = strtoupper(empty($httpMethod) ? $_SERVER['REQUEST_METHOD'] : $httpMethod);
         $this->body = !empty($body) && !is_array($body) ? $body :
             ($_POST ? $_POST : json_decode(file_get_contents('php://input'), true));
@@ -45,6 +47,8 @@ class Request
             return $this->method;
         } else if($name === 'hostname') {
             return $this->hostname;
+        } else if($name === 'port') {
+            return $this->port;
         } else if($name === 'uri') {
             return $this->uri;
         } else if ($name === 'params') {
