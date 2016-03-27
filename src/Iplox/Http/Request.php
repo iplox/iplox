@@ -18,11 +18,21 @@ class Request
         $this->hostname = empty($hostname) ? $_SERVER['SERVER_NAME'] : $hostname;
         $this->port = empty($port) ? $_SERVER['SERVER_PORT'] : $port;
         $this->method = strtoupper(empty($httpMethod) ? $_SERVER['REQUEST_METHOD'] : $httpMethod);
-        $this->body = !empty($body) && !is_array($body) ? $body :
-            ($_POST ? $_POST : json_decode(file_get_contents('php://input'), true));
-        if(empty($this->body)) {
-            $this->body = [];
+        
+
+        $headers = \apache_request_headers();
+        $ct = strtolower($headers['Content-Type']);
+        if(!empty($body)){
+            $this->body = $body;
         }
+        else if($ct === 'application/json' || $ct === 'application/json;charset=utf-8'){
+            $this->body =  \json_decode(\file_get_contents('php://input'), true);
+        } else if($ct === 'application/x-www-form-urlencoded' || $ct = 'multipart/form-data-encoded'){
+            $this->body = $_POST;
+        } else {
+            $this->body = \file_get_contents('php://input');
+        }
+        
         $this->extra = new \stdClass();
     }
 
