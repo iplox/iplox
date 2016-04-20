@@ -21,11 +21,11 @@ class Request
         
 
         $headers = \apache_request_headers();
-        $ct = strtolower($headers['Content-Type']);
+        $ct = array_key_exists('Content-Type', $headers) ? strtolower($headers['Content-Type']) : null;
+
         if(!empty($body)){
             $this->body = $body;
-        }
-        else if($ct === 'application/json' || $ct === 'application/json;charset=utf-8'){
+        } else if($ct === 'application/json' || $ct === 'application/json;charset=utf-8'){
             $this->body =  \json_decode(\file_get_contents('php://input'), true);
         } else if($ct === 'application/x-www-form-urlencoded' || $ct = 'multipart/form-data-encoded'){
             $this->body = $_POST;
