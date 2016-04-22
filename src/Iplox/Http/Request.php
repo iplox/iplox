@@ -25,9 +25,10 @@ class Request
 
         if(!empty($body)){
             $this->body = $body;
-        } else if($ct === 'application/json' || $ct === 'application/json;charset=utf-8'){
+        } else if(\strpos($ct, 'application/json') >= 0){
             $this->body =  \json_decode(\file_get_contents('php://input'), true);
-        } else if($ct === 'application/x-www-form-urlencoded' || $ct = 'multipart/form-data-encoded'){
+        } else if(\strpos($ct, 'application/x-www-form-urlencoded') >= 0 ||
+            \strpos($ct, 'multipart/form-data-encoded') >= 0) {
             $this->body = $_POST;
         } else {
             $this->body = \file_get_contents('php://input');
