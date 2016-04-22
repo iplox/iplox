@@ -37,7 +37,7 @@ class BaseModule extends AbstractModule {
             'username' => 'root',
             'password' => '',
             'hostname' => 'localhost',
-            'port' => '3386',
+            'port' => '3306',
             'charset' => 'utf8',
             'dbname' => 'IploxApp',
         ]);
